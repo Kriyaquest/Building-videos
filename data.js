@@ -168,7 +168,7 @@ const scannerData = {
     explainerVideo: "https://youtu.be/UIJRTYCjZHQ",
     explainerLabel: "Heredity Activity Kit Explanation",
     explainerHeader: "📖 Heredity Activity Kit Explanation",
-    explainerIcon: "explainer",
+    explainerIcon: "understand",
     extraVideo: ""
   }
 };
