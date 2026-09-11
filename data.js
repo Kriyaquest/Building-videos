@@ -158,6 +158,18 @@ const scannerData = {
     buildVideo: "https://youtu.be/gFcLtI1jJKA",
     explainerVideo: "",
     extraVideo: ""
+  },
+  "heredity": {
+    title: "Heredity",
+    manualUrl: "",
+    buildVideo: "https://youtu.be/aH-Kpt_g4ZA",
+    buildLabel: "Heredity",
+    buildHeader: "🧬 Heredity",
+    explainerVideo: "https://youtu.be/UIJRTYCjZHQ",
+    explainerLabel: "Heredity Activity Kit Explanation",
+    explainerHeader: "📖 Heredity Activity Kit Explanation",
+    explainerIcon: "explainer",
+    extraVideo: ""
   }
 };
 
