@@ -170,6 +170,14 @@ const scannerData = {
     explainerHeader: "📖 Heredity Activity Kit Explanation",
     explainerIcon: "understand",
     extraVideo: ""
+  },
+  "motioneffects": {
+    title: "Motions and its effects",
+    manualUrl: "",
+    buildVideo: "https://youtu.be/1SuP9TEjcn0",
+    buildDesc: "Linear & circular motion observation. Speed & distance-time graphing.",
+    explainerVideo: "",
+    extraVideo: ""
   }
 };
 
