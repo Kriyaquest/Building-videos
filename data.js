@@ -178,6 +178,13 @@ const scannerData = {
     buildDesc: "Linear & circular motion observation. Speed & distance-time graphing.",
     explainerVideo: "",
     extraVideo: ""
+  },
+  "indiasymbols": {
+    title: "India and its symbols",
+    manualUrl: "",
+    buildVideo: "https://youtu.be/JgFxbX_58K8",
+    explainerVideo: "",
+    extraVideo: ""
   }
 };
 
