@@ -185,6 +185,13 @@ const scannerData = {
     buildVideo: "https://youtu.be/JgFxbX_58K8",
     explainerVideo: "",
     extraVideo: ""
+  },
+  "germination": {
+    title: "Germination",
+    manualUrl: "",
+    buildVideo: "https://youtu.be/1GHJ1jEpkvU",
+    explainerVideo: "",
+    extraVideo: ""
   }
 };
 
