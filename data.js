@@ -177,7 +177,8 @@ const scannerData = {
     buildVideo: "https://youtu.be/1SuP9TEjcn0",
     buildDesc: "Linear & circular motion observation. Speed & distance-time graphing.",
     explainerVideo: "",
-    extraVideo: ""
+    extraVideo: "",
+    lab: "propeller"
   },
   "indiasymbols": {
     title: "India and its symbols",
