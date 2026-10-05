@@ -10,8 +10,8 @@ const fx = (x, d) => { const r = Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x; r
 
 /* ---------------- Parameters ---------------- */
 const TRACK = 10;                                   // metres to the finish line
-const DEF = { V: 9, Vr: 5, B: 4, D: 6, m: 50, mu: 0.03 };
-const CARS = { big: { m: 50, L: 2 }, mini: { m: 25, L: 1.6 } };   // placeholder weights (g), L = body size in inches (air drag only)
+const DEF = { V: 9, Vr: 5, B: 4, D: 6, m: 200, mu: 0.03 };
+const CARS = { big: { m: 200, L: 2 }, mini: { m: 125, L: 1.6 } };  // approximate weights in grams; L = body size in inches (air drag only)
 const p = Object.assign({ L: CARS.big.L }, DEF);
 let car = "big";
 const SLIDERS = [
