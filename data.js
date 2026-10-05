@@ -198,7 +198,8 @@ const scannerData = {
     manualUrl: "",
     buildVideo: "https://youtu.be/5Tc3EHcgYYs",
     explainerVideo: "",
-    extraVideo: ""
+    extraVideo: "",
+    lab: "propeller"
   }
 };
 

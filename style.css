@@ -795,3 +795,119 @@ body.dark .tab-button.active#buttonBuild {
     height: 44px;
   }
 }
+
+/* -------------------------------------------------------------
+ * LAB EXP (interactive lab in an iframe, expandable to full screen)
+ * ------------------------------------------------------------- */
+#buttonLab .tab-button-icon {
+  background-color: rgba(14, 159, 110, 0.08);
+  color: #0e9f6e;
+}
+.tab-button.active#buttonLab {
+  background-color: #0e9f6e;
+  box-shadow: 0 10px 20px -5px rgba(14, 159, 110, 0.3);
+}
+.tab-button.active#buttonLab .tab-button-icon {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: var(--white);
+}
+
+.lab-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: clamp(520px, 80vh, 720px);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background-color: var(--accordion-bg);
+  margin-bottom: 20px;
+}
+
+.lab-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px 6px 14px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--accordion-bg);
+}
+
+.lab-bar-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.lab-expand,
+.lab-offer button {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 34px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background-color: var(--white);
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.lab-expand:hover,
+.lab-offer button:hover {
+  border-color: #0e9f6e;
+}
+
+.lab-iframe {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  background-color: var(--accordion-bg);
+}
+
+/* "Expand for a bigger view?" shown when a phone is turned sideways */
+.lab-offer {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 62px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background-color: var(--primary-color);
+  color: var(--bg-light);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.lab-offer[hidden] { display: none; } /* display:flex above would otherwise override the hidden attribute */
+.lab-offer span { flex: 1; }
+.lab-offer .lab-offer-yes { background-color: #0e9f6e; border-color: transparent; color: #fff; }
+
+/* Expanded view: fills the screen. Used everywhere; real fullscreen is added on top where supported. */
+.lab-container.lab-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+body.lab-open { overflow: hidden; }
+body.lab-open .main-content { z-index: 2000; } /* lift above the sticky header */
+
+@media (max-width: 600px) {
+  .lab-container { height: clamp(500px, 78vh, 680px); }
+  .lab-container.lab-expanded { height: 100dvh; }
+}

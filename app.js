@@ -33,22 +33,30 @@ const buttonManual = document.getElementById('buttonManual');
 const buttons = {
   build: document.getElementById('buttonBuild'),
   understand: document.getElementById('buttonUnderstand'),
-  explore: document.getElementById('buttonExplore')
+  explore: document.getElementById('buttonExplore'),
+  lab: document.getElementById('buttonLab')
 };
 
 // Accordion Boxes
 const boxes = {
   build: document.getElementById('boxBuild'),
   understand: document.getElementById('boxUnderstand'),
-  explore: document.getElementById('boxExplore')
+  explore: document.getElementById('boxExplore'),
+  lab: document.getElementById('boxLab')
 };
 
 // Iframe Elements
 const videos = {
   build: document.getElementById('videoBuild'),
   understand: document.getElementById('videoUnderstand'),
-  explore: document.getElementById('videoExplore')
+  explore: document.getElementById('videoExplore'),
+  lab: document.getElementById('videoLab')
 };
+
+// Lab exp: container, expand button and rotate offer
+const labContainer = document.getElementById('labContainer');
+const labExpandBtn = document.getElementById('labExpand');
+const labOffer = document.getElementById('labOffer');
 
 // Theme Elements
 const themeToggle = document.getElementById('themeToggle');
@@ -56,7 +64,7 @@ const sunIcon = document.getElementById('sunIcon');
 const moonIcon = document.getElementById('moonIcon');
 
 // Active state tracking
-let activeKey = null; // 'build', 'understand', 'explore', or null
+let activeKey = null; // 'build', 'understand', 'explore', 'lab', or null
 let currentItem = null; // Active experiment data
 
 /**
@@ -96,6 +104,62 @@ function pauseYouTubeVideo(iframe) {
 }
 
 /**
+ * Lab exp helpers: the lab is a page in /labs/<slug>/ shown in an iframe, like the videos.
+ * The lab fills whatever space it is given, so expanding or rotating needs no messages;
+ * we only tell it the theme and when to pause/resume.
+ */
+let labExpanded = false;
+let labOfferDeclined = false; // remembered for this visit only
+const landscapePhone = window.matchMedia('(orientation: landscape) and (max-height: 520px)');
+
+function labUrl(slug) {
+  const theme = document.body.classList.contains('dark') ? 'dark' : 'light';
+  return `/labs/${encodeURIComponent(slug)}/index.html?theme=${theme}`;
+}
+
+function postToLab(msg) {
+  try { videos.lab.contentWindow.postMessage(msg, window.location.origin); } catch (e) { /* lab not loaded */ }
+}
+
+/** Pauses whatever is playing in a box: YouTube via its API, a lab via message. */
+function pauseEmbed(key) {
+  if (key === 'lab') postToLab({ kq: 'pause' });
+  else pauseYouTubeVideo(videos[key]);
+}
+
+function setLabExpanded(on) {
+  if (on === labExpanded) return;
+  labExpanded = on;
+  labContainer.classList.toggle('lab-expanded', on);
+  document.body.classList.toggle('lab-open', on);
+  labExpandBtn.textContent = on ? 'Close' : 'Expand';
+  labExpandBtn.setAttribute('aria-label', on ? 'Close the full-screen lab' : 'Expand the lab to fill the screen');
+  labOffer.hidden = true;
+  // Real fullscreen where the browser allows it (not iPhone Safari); otherwise the CSS overlay is the expanded view.
+  if (on && labContainer.requestFullscreen) labContainer.requestFullscreen().catch(() => {});
+  else if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+
+function maybeOfferExpand() {
+  if (landscapePhone.matches && activeKey === 'lab' && !labExpanded && !labOfferDeclined) labOffer.hidden = false;
+}
+
+labExpandBtn.addEventListener('click', () => setLabExpanded(!labExpanded));
+document.getElementById('labOfferYes').addEventListener('click', () => setLabExpanded(true));
+document.getElementById('labOfferNo').addEventListener('click', () => { labOfferDeclined = true; labOffer.hidden = true; });
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && labExpanded) setLabExpanded(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && labExpanded) setLabExpanded(false); });
+// Offer when the phone turns sideways. Listen to resize too, as a backup for browsers that skip the media-query event.
+let wasLandscape = landscapePhone.matches;
+function onTurn() {
+  if (landscapePhone.matches === wasLandscape) return;
+  wasLandscape = landscapePhone.matches;
+  if (wasLandscape) maybeOfferExpand(); else labOffer.hidden = true;
+}
+landscapePhone.addEventListener('change', onTurn);
+window.addEventListener('resize', onTurn);
+
+/**
  * Dynamic accordion logic (based on your Wix Velo code)
  */
 function toggleAccordion(key) {
@@ -108,7 +172,8 @@ function toggleAccordion(key) {
   if (!isExpanded) {
     // 1. Pause currently playing video
     if (activeKey && activeKey !== key) {
-      pauseYouTubeVideo(videos[activeKey]);
+      pauseEmbed(activeKey);
+      if (activeKey === 'lab') setLabExpanded(false);
       boxes[activeKey].classList.remove('expanded');
       buttons[activeKey].classList.remove('active');
       buttons[activeKey].setAttribute('aria-expanded', 'false');
@@ -123,9 +188,16 @@ function toggleAccordion(key) {
     else if (key === 'understand') videoUrl = currentItem.explainerVideo;
     else if (key === 'explore') videoUrl = currentItem.extraVideo;
 
-    const targetEmbedUrl = getYouTubeEmbedUrl(videoUrl);
-    if (iframe.src !== targetEmbedUrl) {
-      iframe.src = targetEmbedUrl;
+    if (key === 'lab') {
+      // Load the lab once; reopening just resumes it.
+      if (!iframe.getAttribute('src')) iframe.src = labUrl(currentItem.lab);
+      else postToLab({ kq: 'resume' });
+      maybeOfferExpand();
+    } else {
+      const targetEmbedUrl = getYouTubeEmbedUrl(videoUrl);
+      if (iframe.src !== targetEmbedUrl) {
+        iframe.src = targetEmbedUrl;
+      }
     }
 
     // 4. Open current accordion
@@ -145,8 +217,9 @@ function toggleAccordion(key) {
     button.classList.remove('active');
     button.setAttribute('aria-expanded', 'false');
     
-    // Pause video player
-    pauseYouTubeVideo(iframe);
+    // Pause video player or lab
+    pauseEmbed(key);
+    if (key === 'lab') { setLabExpanded(false); labOffer.hidden = true; }
   }
 }
 
@@ -217,10 +290,18 @@ function renderPage(item) {
   const exploreDesc = boxes.explore.querySelector('.video-info p');
   if (exploreDesc) exploreDesc.textContent = item.extraDesc || "Follow along with the step-by-step video instructions to assemble your kit components correctly.";
 
+  const labTitle = buttons.lab.querySelector('.tab-title');
+  if (labTitle) labTitle.textContent = item.labLabel || "Lab exp";
+  const labHeader = boxes.lab.querySelector('.video-info h3');
+  if (labHeader) labHeader.textContent = item.labHeader || "🧪 Lab exp";
+  const labDesc = boxes.lab.querySelector('.video-info p');
+  if (labDesc) labDesc.textContent = item.labDesc || "Change the settings and see how it responds.";
+
   // 4. Setup Video Buttons Visibility
   const hasBuild = item.buildVideo && item.buildVideo.trim() !== "";
   const hasUnderstand = item.explainerVideo && item.explainerVideo.trim() !== "";
   const hasExplore = item.extraVideo && item.extraVideo.trim() !== "";
+  const hasLab = item.lab && item.lab.trim() !== "";
 
   if (hasBuild) {
     buttons.build.classList.remove('hidden');
@@ -240,11 +321,15 @@ function renderPage(item) {
     buttons.explore.classList.add('hidden');
   }
 
+  // Lab exp takes the next free slot, after any videos
+  buttons.lab.classList.toggle('hidden', !hasLab);
+
   // Dynamically update subtitles (Step 1, Step 2, etc.) or hide them if there's only 1 button
   const activeButtons = [];
   if (hasBuild) activeButtons.push(buttons.build);
   if (hasUnderstand) activeButtons.push(buttons.understand);
   if (hasExplore) activeButtons.push(buttons.explore);
+  if (hasLab) activeButtons.push(buttons.lab);
 
   // Reset display style and default content
   Object.values(buttons).forEach(btn => {
@@ -271,6 +356,8 @@ function renderPage(item) {
   }
 
   // 4. Reset accordion states
+  setLabExpanded(false);
+  labOffer.hidden = true;
   Object.keys(boxes).forEach(k => {
     boxes[k].classList.remove('expanded');
     buttons[k].classList.remove('active');
@@ -400,7 +487,11 @@ async function initializeApp() {
       extraDesc: item.extraDesc,
       buildIcon: item.buildIcon,
       explainerIcon: item.explainerIcon,
-      extraIcon: item.extraIcon
+      extraIcon: item.extraIcon,
+      lab: item.lab,
+      labLabel: item.labLabel,
+      labHeader: item.labHeader,
+      labDesc: item.labDesc
     };
     renderPage(mappedItem);
   } else {
@@ -538,6 +629,7 @@ function initTheme() {
   themeToggle.addEventListener('click', () => {
     const isDark = document.body.classList.toggle('dark');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    postToLab({ kq: 'theme', theme: isDark ? 'dark' : 'light' });
     
     if (isDark) {
       sunIcon.classList.remove('hidden');

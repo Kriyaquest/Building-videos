@@ -138,6 +138,16 @@
             </span>
           </button>
 
+          <button id="buttonLab" class="tab-button hidden" aria-expanded="false">
+            <span class="tab-button-icon icon-lab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"></path><path d="M10 3v6.5L4.6 18.2A2 2 0 0 0 6.3 21h11.4a2 2 0 0 0 1.7-2.8L14 9.5V3"></path><path d="M7.5 15h9"></path></svg>
+            </span>
+            <span class="tab-button-text">
+              <span class="tab-subtitle">Step 2</span>
+              <span class="tab-title">Lab exp</span>
+            </span>
+          </button>
+
         </div>
 
         <!-- Accordions Container -->
@@ -178,6 +188,28 @@
               <div class="video-info">
                 <h3>🚀 Real-world Applications & Experiments</h3>
                 <p>Follow along with the step-by-step video instructions to assemble your kit components correctly.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Box Lab (interactive lab in an iframe) -->
+          <div id="boxLab" class="accordion-box">
+            <div class="accordion-inner">
+              <div class="lab-container" id="labContainer">
+                <div class="lab-bar">
+                  <span class="lab-bar-title">Lab exp</span>
+                  <button type="button" class="lab-expand" id="labExpand" aria-label="Expand the lab to fill the screen">Expand</button>
+                </div>
+                <iframe id="videoLab" class="lab-iframe" src="" title="Interactive lab" allow="fullscreen"></iframe>
+                <div class="lab-offer" id="labOffer" hidden>
+                  <span>Expand for a bigger view?</span>
+                  <button type="button" class="lab-offer-yes" id="labOfferYes">Expand</button>
+                  <button type="button" class="lab-offer-no" id="labOfferNo">Not now</button>
+                </div>
+              </div>
+              <div class="video-info">
+                <h3>🧪 Lab exp</h3>
+                <p>Change the settings and see how it responds.</p>
               </div>
             </div>
           </div>
