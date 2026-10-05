@@ -192,14 +192,6 @@ const scannerData = {
     buildVideo: "https://youtu.be/1GHJ1jEpkvU",
     explainerVideo: "",
     extraVideo: ""
-  },
-  "propelforces": {
-    title: "Propel forces",
-    manualUrl: "",
-    buildVideo: "https://youtu.be/5Tc3EHcgYYs",
-    explainerVideo: "",
-    extraVideo: "",
-    lab: "propeller"
   }
 };
 
