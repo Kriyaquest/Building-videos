@@ -17,7 +17,7 @@
 .play-note{font-family:var(--f-hand);font-size:19px;color:#3b4a57;background:#ffffffd9;padding:0 10px;border-radius:6px;white-space:nowrap}
 .hud{position:absolute;top:42px;right:8px;display:flex;gap:10px;font:600 12.5px var(--f-mono);background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-variant-numeric:tabular-nums}
 .hud small{color:var(--muted);font-weight:500}
-.badge{position:absolute;left:8px;top:42px;max-width:calc(100% - 190px);padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;border:1px solid var(--line);background:var(--surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{position:absolute;right:8px;bottom:8px;max-width:62%;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;border:1px solid var(--line);background:var(--surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .badge[data-kind="ok"]{background:var(--good-bg);color:var(--good)} .badge[data-kind="warn"]{background:var(--warn-bg);color:var(--warn)}
 .badge[data-kind="bad"]{background:var(--bad-bg);color:var(--bad)} .badge[data-kind="info"]{background:var(--info-bg);color:var(--accent)}
 .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
