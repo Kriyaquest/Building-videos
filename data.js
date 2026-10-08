@@ -193,6 +193,13 @@ const scannerData = {
     buildVideo: "https://youtu.be/1GHJ1jEpkvU",
     explainerVideo: "",
     extraVideo: ""
+  },
+  "electriccircuits": {
+    title: "Electric Circuits & Conductors",
+    manualUrl: "",
+    buildVideo: "https://youtu.be/5Tc3EHcgYYs",
+    explainerVideo: "",
+    extraVideo: ""
   }
 };
 
