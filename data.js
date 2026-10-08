@@ -200,6 +200,20 @@ const scannerData = {
     buildVideo: "https://youtu.be/5Tc3EHcgYYs",
     explainerVideo: "",
     extraVideo: ""
+  },
+  "ouruniverse": {
+    title: "Our universe: Beyond Earth",
+    manualUrl: "",
+    buildVideo: "https://youtu.be/LnU4s6jmNj0",
+    explainerVideo: "",
+    extraVideo: ""
+  },
+  "eclipses": {
+    title: "Earth & Celestial Bodies: Eclipses",
+    manualUrl: "",
+    buildVideo: "https://youtu.be/nAIx-6vxRk0",
+    explainerVideo: "",
+    extraVideo: ""
   }
 };
 
