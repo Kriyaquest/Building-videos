@@ -640,6 +640,203 @@ body.dark .tab-button.active#buttonBuild {
 }
 
 /* -------------------------------------------------------------
+ * CHECK ANSWERS (solution key: one family per tap, or all at once)
+ * ------------------------------------------------------------- */
+#buttonAnswers .tab-button-icon {
+  background-color: rgba(124, 58, 237, 0.08);
+  color: #7c3aed;
+}
+.tab-button.active#buttonAnswers {
+  background-color: #7c3aed;
+  box-shadow: 0 10px 20px -5px rgba(124, 58, 237, 0.3);
+}
+.tab-button.active#buttonAnswers .tab-button-icon {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+.tab-button.active#buttonAnswers .tab-title {
+  color: #ffffff !important;
+}
+
+.answers-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.answers-hint {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.answers-all {
+  flex: none;
+  padding: 8px 14px;
+  background: transparent;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  color: var(--text-dark);
+  font: 600 13px var(--font-sans);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.answers-all:hover {
+  border-color: var(--text-muted);
+}
+
+.answers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.answer-fam {
+  background-color: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.answer-fam-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  background: transparent;
+  border: 0;
+  color: var(--text-dark);
+  font: 600 15px var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+
+.answer-fam-head b {
+  flex: 1;
+  font-weight: 700;
+}
+
+.answer-fam-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+  font-weight: 700;
+  transition: var(--transition-smooth);
+}
+
+.answer-fam.open .answer-fam-num {
+  background-color: #7c3aed;
+  color: #ffffff;
+}
+
+.answer-fam-chev {
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.answer-fam.open .answer-fam-chev {
+  transform: rotate(180deg);
+}
+
+.answer-fam-body {
+  display: none;
+  padding: 0 14px 6px;
+}
+
+.answer-fam.open .answer-fam-body {
+  display: block;
+}
+
+.answer-fam-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.answer-fam-label {
+  width: 64px;
+  flex: none;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.id-chip {
+  padding: 4px 14px;
+  border-radius: 99px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.id-father {
+  background-color: rgba(6, 147, 227, 0.12);
+  color: var(--accent-cyan);
+}
+
+.id-mother {
+  background-color: rgba(255, 105, 0, 0.12);
+  color: var(--accent-orange);
+}
+
+.id-child {
+  background-color: rgba(14, 159, 110, 0.12);
+  color: #0e9f6e;
+}
+
+.answers-table {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--white);
+  padding: 4px 14px;
+  overflow-x: auto;
+}
+
+.answers-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+
+.answers-table th {
+  padding: 10px 6px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.answers-table td {
+  padding: 10px 6px;
+  color: var(--text-dark);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.answers-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.answers-table td:first-child {
+  color: var(--text-muted);
+}
+
+/* -------------------------------------------------------------
  * ACTIVITIES (several activities, each with a Build and an Explain video)
  * ------------------------------------------------------------- */
 .activities-list {

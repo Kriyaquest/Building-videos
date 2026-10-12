@@ -148,6 +148,16 @@
             </span>
           </button>
 
+          <button id="buttonAnswers" class="tab-button hidden" aria-expanded="false">
+            <span class="tab-button-icon icon-answers">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 20H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8"></path><path d="M14 19l2 2 4-4"></path><path d="M9 8h4"></path><path d="M9 12h2"></path></svg>
+            </span>
+            <span class="tab-button-text">
+              <span class="tab-subtitle">Step 3</span>
+              <span class="tab-title">Check answers</span>
+            </span>
+          </button>
+
         </div>
 
         <!-- Accordions Container -->
@@ -211,6 +221,18 @@
                 <h3>🧪 Lab exp</h3>
                 <p>Change the settings and see how it responds.</p>
               </div>
+            </div>
+          </div>
+
+          <!-- Box Answers (solution key: one family per tap, or all at once) -->
+          <div id="boxAnswers" class="accordion-box">
+            <div class="accordion-inner">
+              <div class="answers-head">
+                <span class="answers-hint" id="answersHint"></span>
+                <button type="button" class="answers-all" id="answersAllBtn">Show all</button>
+              </div>
+              <div class="answers-list" id="answersList"></div>
+              <div class="answers-table hidden" id="answersTable"></div>
             </div>
           </div>
 

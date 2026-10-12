@@ -34,7 +34,8 @@ const buttons = {
   build: document.getElementById('buttonBuild'),
   understand: document.getElementById('buttonUnderstand'),
   explore: document.getElementById('buttonExplore'),
-  lab: document.getElementById('buttonLab')
+  lab: document.getElementById('buttonLab'),
+  answers: document.getElementById('buttonAnswers')
 };
 
 // Accordion Boxes
@@ -42,7 +43,8 @@ const boxes = {
   build: document.getElementById('boxBuild'),
   understand: document.getElementById('boxUnderstand'),
   explore: document.getElementById('boxExplore'),
-  lab: document.getElementById('boxLab')
+  lab: document.getElementById('boxLab'),
+  answers: document.getElementById('boxAnswers')
 };
 
 // Iframe Elements
@@ -193,7 +195,7 @@ function toggleAccordion(key) {
       if (!iframe.getAttribute('src')) iframe.src = labUrl(currentItem.lab);
       else postToLab({ kq: 'resume' });
       maybeOfferExpand();
-    } else {
+    } else if (key !== 'answers') {
       const targetEmbedUrl = getYouTubeEmbedUrl(videoUrl);
       if (iframe.src !== targetEmbedUrl) {
         iframe.src = targetEmbedUrl;
@@ -312,6 +314,85 @@ function renderActivities(list) {
 }
 
 /**
+ * Check answers: data has `answers: [{ father, mother, children: [] }]`. Families open one
+ * at a time; "Show all" swaps the list for one compact table.
+ */
+const answersList = document.getElementById('answersList');
+const answersTable = document.getElementById('answersTable');
+const answersAllBtn = document.getElementById('answersAllBtn');
+let answersShowAll = false;
+
+function makeEl(tag, className, text) {
+  const e = document.createElement(tag);
+  if (className) e.className = className;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function setAnswersShowAll(on) {
+  answersShowAll = on;
+  const n = answersList.children.length;
+  document.getElementById('answersHint').textContent = on ? `All ${n} families` : `${n} families · tap one to check`;
+  answersList.classList.toggle('hidden', on);
+  answersTable.classList.toggle('hidden', !on);
+  answersAllBtn.textContent = on ? 'Show one at a time' : 'Show all';
+}
+
+function renderAnswers(list) {
+  answersList.innerHTML = '';
+  answersTable.innerHTML = '';
+
+  list.forEach((fam, i) => {
+    const row = makeEl('div', 'answer-fam');
+    const head = makeEl('button', 'answer-fam-head');
+    head.type = 'button';
+    head.setAttribute('aria-expanded', 'false');
+    head.append(makeEl('span', 'answer-fam-num', String(i + 1)), makeEl('b', '', `Family ${i + 1}`));
+    head.insertAdjacentHTML('beforeend', '<svg class="answer-fam-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+
+    const body = makeEl('div', 'answer-fam-body');
+    const addRow = (label, ids, cls) => {
+      const r = makeEl('div', 'answer-fam-row');
+      r.appendChild(makeEl('span', 'answer-fam-label', label));
+      ids.forEach(id => r.appendChild(makeEl('span', `id-chip ${cls}`, id)));
+      body.appendChild(r);
+    };
+    addRow('Father', [fam.father], 'id-father');
+    addRow('Mother', [fam.mother], 'id-mother');
+    addRow(fam.children.length > 1 ? 'Children' : 'Child', fam.children, 'id-child');
+
+    head.addEventListener('click', () => {
+      const wasOpen = row.classList.contains('open');
+      answersList.querySelectorAll('.answer-fam').forEach(f => {
+        f.classList.remove('open');
+        f.querySelector('.answer-fam-head').setAttribute('aria-expanded', 'false');
+      });
+      if (!wasOpen) {
+        row.classList.add('open');
+        head.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    row.append(head, body);
+    answersList.appendChild(row);
+  });
+
+  const table = makeEl('table');
+  const headRow = table.createTHead().insertRow();
+  ['Family', 'Father', 'Mother', 'Children'].forEach(h => headRow.appendChild(makeEl('th', '', h)));
+  const tbody = table.createTBody();
+  list.forEach((fam, i) => {
+    const r = tbody.insertRow();
+    [String(i + 1), fam.father, fam.mother, fam.children.join(', ')].forEach(v => r.insertCell().textContent = v);
+  });
+  answersTable.appendChild(table);
+
+  setAnswersShowAll(false);
+}
+
+answersAllBtn.addEventListener('click', () => setAnswersShowAll(!answersShowAll));
+
+/**
  * Dynamic layout builder based on dataset schema
  */
 function renderPage(item) {
@@ -419,12 +500,20 @@ function renderPage(item) {
   // Lab exp takes the next free slot, after any videos
   buttons.lab.classList.toggle('hidden', !hasLab);
 
+  // Check answers comes last
+  const answers = Array.isArray(item.answers) ? item.answers : [];
+  const hasAnswers = answers.length > 0;
+  buttons.answers.classList.toggle('hidden', !hasAnswers);
+  buttons.answers.querySelector('.tab-title').textContent = item.answersLabel || "Check answers";
+  if (hasAnswers) renderAnswers(answers);
+
   // Dynamically update subtitles (Step 1, Step 2, etc.) or hide them if there's only 1 button
   const activeButtons = [];
   if (hasBuild) activeButtons.push(buttons.build);
   if (hasUnderstand) activeButtons.push(buttons.understand);
   if (hasExplore) activeButtons.push(buttons.explore);
   if (hasLab) activeButtons.push(buttons.lab);
+  if (hasAnswers) activeButtons.push(buttons.answers);
 
   // Reset display style and default content
   Object.values(buttons).forEach(btn => {
@@ -457,7 +546,7 @@ function renderPage(item) {
     boxes[k].classList.remove('expanded');
     buttons[k].classList.remove('active');
     buttons[k].setAttribute('aria-expanded', 'false');
-    videos[k].src = ""; // Clear iframe source (save CPU & network)
+    if (videos[k]) videos[k].src = ""; // Clear iframe source (save CPU & network)
   });
   activeKey = null;
 
@@ -584,6 +673,8 @@ async function initializeApp() {
       explainerIcon: item.explainerIcon,
       extraIcon: item.extraIcon,
       activities: item.activities,
+      answers: item.answers,
+      answersLabel: item.answersLabel,
       lab: item.lab,
       labLabel: item.labLabel,
       labHeader: item.labHeader,

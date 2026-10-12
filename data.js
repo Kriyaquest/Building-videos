@@ -169,7 +169,17 @@ const scannerData = {
     explainerLabel: "Heredity Activity Kit Explanation",
     explainerHeader: "📖 Heredity Activity Kit Explanation",
     explainerIcon: "understand",
-    extraVideo: ""
+    extraVideo: "",
+    answers: [
+      { father: "M1", mother: "F8", children: ["C14", "C6"] },
+      { father: "M2", mother: "F6", children: ["C13", "C5"] },
+      { father: "M3", mother: "F4", children: ["C10", "C11"] },
+      { father: "M4", mother: "F2", children: ["C9", "C1"] },
+      { father: "M5", mother: "F7", children: ["C12", "C4"] },
+      { father: "M6", mother: "F5", children: ["C3", "C8"] },
+      { father: "M7", mother: "F3", children: ["C2"] },
+      { father: "M8", mother: "F1", children: ["C7"] }
+    ]
   },
   "motioneffects": {
     title: "Motions and its effects",
