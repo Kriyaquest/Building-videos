@@ -304,9 +304,11 @@ function buildActivity(data, index) {
 function renderActivities(list) {
   activitiesList.innerHTML = "";
   openActivity = null;
-  const items = list.map(buildActivity);
-  items.forEach(a => activitiesList.appendChild(a.el));
-  setActivityOpen(items[0], true, false);
+  const hint = document.createElement('p');
+  hint.className = 'activities-hint';
+  hint.textContent = `${list.length} activities · tap one to start`;
+  activitiesList.appendChild(hint);
+  list.map(buildActivity).forEach(a => activitiesList.appendChild(a.el));
 }
 
 /**

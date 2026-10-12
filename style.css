@@ -648,6 +648,14 @@ body.dark .tab-button.active#buttonBuild {
   gap: 12px;
 }
 
+.activities-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 .activity-head {
   width: 100%;
 }
