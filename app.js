@@ -224,14 +224,107 @@ function toggleAccordion(key) {
 }
 
 /**
+ * Activities: a page whose data has `activities: [{ name, build, explain }]` shows one
+ * expandable row per activity, each with a Build / Explain toggle over a single player.
+ */
+const activitiesList = document.getElementById('activitiesList');
+const ACTIVITY_COPY = {
+  build: { h: "🛠️ Let's Build Your Project", p: "Follow along with the step-by-step video to build this activity." },
+  explain: { h: "💡 The Science Behind It", p: "Watch how it works and the science behind it." }
+};
+let openActivity = null;
+
+function showActivityVideo(a) {
+  const url = getYouTubeEmbedUrl(a.data[a.mode]);
+  if (a.iframe.src !== url) a.iframe.src = url;
+  a.h3.textContent = ACTIVITY_COPY[a.mode].h;
+  a.desc.textContent = ACTIVITY_COPY[a.mode].p;
+}
+
+function setActivityMode(a, mode) {
+  a.mode = mode;
+  a.segButtons.forEach(b => {
+    const on = b.dataset.mode === mode;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+  showActivityVideo(a);
+}
+
+function setActivityOpen(a, open, scroll) {
+  if (open && openActivity && openActivity !== a) setActivityOpen(openActivity, false);
+  a.box.classList.toggle('expanded', open);
+  a.head.classList.toggle('active', open);
+  a.head.setAttribute('aria-expanded', String(open));
+  if (open) {
+    showActivityVideo(a);
+    openActivity = a;
+    if (scroll) setTimeout(() => a.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 300);
+  } else {
+    pauseYouTubeVideo(a.iframe);
+    if (openActivity === a) openActivity = null;
+  }
+}
+
+function buildActivity(data, index) {
+  const a = { data, mode: 'build' };
+  a.el = document.createElement('div');
+  a.el.className = 'activity';
+
+  a.head = document.createElement('button');
+  a.head.type = 'button';
+  a.head.className = 'tab-button activity-head';
+  a.head.setAttribute('aria-expanded', 'false');
+  a.head.innerHTML = `<span class="tab-button-icon">${index + 1}</span><span class="tab-button-text"><span class="tab-subtitle">Activity ${index + 1}</span><span class="tab-title"></span></span>`;
+  a.head.querySelector('.tab-title').textContent = data.name;
+
+  a.box = document.createElement('div');
+  a.box.className = 'accordion-box';
+  a.box.innerHTML = `<div class="accordion-inner">
+    <div class="activity-seg">
+      <button type="button" class="seg-btn on" data-mode="build" aria-pressed="true">${ICONS.build}<span>Build</span></button>
+      <button type="button" class="seg-btn" data-mode="explain" aria-pressed="false">${ICONS.understand}<span>Explain</span></button>
+    </div>
+    <div class="video-container"><iframe class="video-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
+    <div class="video-info"><h3></h3><p></p></div>
+  </div>`;
+  a.iframe = a.box.querySelector('iframe');
+  a.iframe.title = `${data.name} video player`;
+  a.h3 = a.box.querySelector('.video-info h3');
+  a.desc = a.box.querySelector('.video-info p');
+  a.segButtons = Array.from(a.box.querySelectorAll('.seg-btn'));
+
+  a.head.addEventListener('click', () => setActivityOpen(a, !a.box.classList.contains('expanded'), true));
+  a.segButtons.forEach(b => b.addEventListener('click', () => setActivityMode(a, b.dataset.mode)));
+
+  a.el.append(a.head, a.box);
+  return a;
+}
+
+function renderActivities(list) {
+  activitiesList.innerHTML = "";
+  openActivity = null;
+  const items = list.map(buildActivity);
+  items.forEach(a => activitiesList.appendChild(a.el));
+  setActivityOpen(items[0], true, false);
+}
+
+/**
  * Dynamic layout builder based on dataset schema
  */
 function renderPage(item) {
   currentItem = item;
-  
+
   // 1. Update Title and metadata
   experimentTitle.textContent = item.title;
   document.title = `${item.title} | Kriya Quest Scanner`;
+
+  // Activities pages replace the three-button layout
+  const activities = Array.isArray(item.activities) ? item.activities : [];
+  document.getElementById('buttonsGrid').classList.toggle('hidden', activities.length > 0);
+  document.querySelector('.accordions-container').classList.toggle('hidden', activities.length > 0);
+  activitiesList.classList.toggle('hidden', activities.length === 0);
+  if (activities.length) renderActivities(activities);
 
   // 2. Setup Manual Button (Dynamic)
   if (item.manualUrl && item.manualUrl.trim() !== "") {
@@ -488,6 +581,7 @@ async function initializeApp() {
       buildIcon: item.buildIcon,
       explainerIcon: item.explainerIcon,
       extraIcon: item.extraIcon,
+      activities: item.activities,
       lab: item.lab,
       labLabel: item.labLabel,
       labHeader: item.labHeader,

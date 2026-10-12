@@ -640,6 +640,101 @@ body.dark .tab-button.active#buttonBuild {
 }
 
 /* -------------------------------------------------------------
+ * ACTIVITIES (several activities, each with a Build and an Explain video)
+ * ------------------------------------------------------------- */
+.activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activity-head {
+  width: 100%;
+}
+
+.activity-head .tab-button-icon {
+  background-color: rgba(9, 30, 58, 0.05);
+  color: var(--primary-color);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+body.dark .activity-head .tab-button-icon {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+}
+
+.activity-head.active {
+  background-color: var(--primary-color);
+  box-shadow: var(--shadow-glow-build);
+}
+
+body.dark .activity-head.active {
+  background-color: #1e293b;
+}
+
+.activity-head.active .tab-button-icon {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.activity-head.active .tab-title {
+  color: #ffffff !important;
+}
+
+.activity-head.active .tab-subtitle {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.activity .accordion-box.expanded {
+  margin: 8px 0 0;
+}
+
+.activity-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.seg-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background: transparent;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  color: var(--text-dark);
+  font: 600 14px var(--font-sans);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.seg-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.seg-btn.on {
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.seg-btn.on[data-mode="build"] {
+  background-color: var(--primary-color);
+}
+
+body.dark .seg-btn.on[data-mode="build"] {
+  background-color: #334155;
+}
+
+.seg-btn.on[data-mode="explain"] {
+  background-color: var(--accent-orange);
+}
+
+/* -------------------------------------------------------------
  * FOOTER
  * ------------------------------------------------------------- */
 .footer {

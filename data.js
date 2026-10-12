@@ -197,9 +197,15 @@ const scannerData = {
   "electriccircuits": {
     title: "Electric Circuits & Conductors",
     manualUrl: "",
-    buildVideo: "https://youtu.be/5Tc3EHcgYYs",
+    buildVideo: "",
     explainerVideo: "",
-    extraVideo: ""
+    extraVideo: "",
+    activities: [
+      { name: "Light up home activity", build: "https://youtu.be/PDHwbD1MNz0", explain: "https://youtu.be/Cy5zy3rht2c" },
+      { name: "Simple circuit and conductivity", build: "https://youtu.be/yyydrEPebtI", explain: "https://youtu.be/pG3B5QOi0VA" },
+      { name: "3-pin toggle switch", build: "https://youtu.be/F9axoqIFAyc", explain: "https://youtu.be/luCwleJxuts" },
+      { name: "Ring wire game", build: "https://youtu.be/U6LCTNlogNM", explain: "https://youtu.be/fManTTqydIw" }
+    ]
   },
   "ouruniverse": {
     title: "Our universe: Beyond Earth",
