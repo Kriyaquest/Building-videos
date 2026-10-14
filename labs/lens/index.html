@@ -1,0 +1,1267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Lens Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gabarito:wght@600;800&family=Lexend:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one-screen phone app. Header, goal strip, stage = optical bench (left) | eyepiece view + controls (right), action bar. */
+:root{
+  --bg:#0c1620; --panel:#132230; --panel2:#1a2d3d; --line:#28404f; --ink:#e8f0f4; --muted:#91a7b6;
+  --beam:#ffb547; --beam2:#7fe3c8; --glass:#9ad9ff; --good:#72dd92; --bad:#ff806e; --star:#ffd257;
+  --f-display:'Gabarito','Trebuchet MS',system-ui,sans-serif;
+  --f-body:'Lexend',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.4;overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,canvas:focus-visible{outline:2px solid var(--glass);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+#app{height:100%;max-width:980px;margin:0 auto;padding-inline:16px;padding-block:8px;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:8px}
+.top{display:flex;align-items:center;gap:8px}
+.top .ttl{flex:1;min-width:0}
+.top .ttl small{display:block;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.top .ttl h2{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{height:38px;min-width:38px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:13px}
+.icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.goal{margin:0;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.goal b{color:var(--beam);font-weight:600}
+
+.stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;min-height:0}
+.bench{position:relative;min-height:0;border-radius:14px;overflow:hidden;background:
+  linear-gradient(90deg,transparent 0 calc(50% - .5px),rgba(154,217,255,.05) calc(50% - .5px) calc(50% + .5px),transparent 0),
+  radial-gradient(120% 80% at 50% 0%,#17293a,#0e1b26 70%);border:1px solid var(--line)}
+.bench canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.side{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-bottom:4px}
+.viewbox{position:relative;width:100%;max-width:240px;align-self:center}
+.viewbox canvas{display:block;width:100%;aspect-ratio:1;max-width:100%}
+.viewbox .cap{position:absolute;left:0;right:0;bottom:-2px;text-align:center;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.rows{display:grid;gap:2px;font-size:13px}
+.rows div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding:3px 0}
+.rows span:first-child{color:var(--muted)}
+.rows span:last-child{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+.meter{font-size:12px;color:var(--muted)}
+.meter .bar{height:10px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden;margin-top:3px}
+.meter .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--bad),var(--beam) 55%,var(--good));transition:width .12s}
+.formula{font-family:var(--f-mono);font-size:12px;line-height:1.5;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--ink);overflow-wrap:anywhere}
+.formula em{font-style:normal;color:var(--beam2)}
+.formula .lbl{display:block;font-family:var(--f-body);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.chips-h{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;line-height:1.15;touch-action:none}
+.chip svg{width:40px;height:22px}
+.chip b{font-family:var(--f-mono);font-weight:500;font-size:12px}
+.chip .z{color:var(--beam)}
+.chip.on{border-color:var(--glass);background:#1d3a4d;box-shadow:0 0 0 1px var(--glass) inset}
+.quiz{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.quiz p{grid-column:1/-1;margin:0;font-size:13px}
+.quiz button{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 4px;font-family:var(--f-mono)}
+
+.actions{display:flex;gap:8px;align-items:stretch}
+.nudge{display:flex;gap:6px}
+.nudge button{width:52px;border-radius:12px;border:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:var(--muted);padding:4px 0}
+.nudge svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.primary{flex:1;min-height:52px;border:0;border-radius:12px;background:var(--beam);color:#2a1700;font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:.01em}
+.primary:active{transform:translateY(1px)}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(92vw,440px);background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:14px;z-index:30;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.toast.bad{border-color:var(--bad)}
+.toast.hint{border-color:var(--glass)}
+.toast .k{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+
+/* full screens */
+.screen{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;-webkit-user-select:text;user-select:text}
+.screen .wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:calc(20px + env(safe-area-inset-top,0px)) calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:12px;align-items:center}
+.hero h1{font-size:clamp(40px,12vw,68px);line-height:.92;font-weight:800;letter-spacing:-.02em}
+.hero h1 span{color:var(--beam)}
+.hero p{color:var(--muted);margin:8px 0 0;max-width:34ch}
+.hero svg{width:100%;height:auto}
+.big{min-height:54px;border-radius:14px;border:0;background:var(--beam);color:#2a1700;font-family:var(--f-display);font-weight:800;font-size:20px}
+.ghost{min-height:48px;border-radius:14px;border:1px solid var(--line);background:var(--panel);font-weight:500}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.settings{display:grid;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.set{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.set .t{min-width:0}
+.set .t b{display:block;font-weight:600;font-size:14px}
+.set .t span{font-size:12px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:none}
+.seg button{border:0;background:transparent;padding:8px 12px;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--glass);color:#06202e;font-weight:600}
+.lvls{display:grid;gap:10px}
+.lvl{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:12px}
+.lvl .n{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:20px;background:var(--panel2);border:1px solid var(--line)}
+.lvl b{display:block;font-family:var(--f-display);font-size:17px}
+.lvl span{font-size:12px;color:var(--muted)}
+.lvl[disabled]{opacity:.45;cursor:not-allowed}
+.stars{display:inline-flex;gap:2px}
+.stars svg{width:16px;height:16px}
+.st-on{fill:var(--star)} .st-off{fill:var(--line)}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sec-h h2{font-size:26px}
+.note{color:var(--muted);font-size:13px;margin:0}
+
+/* lab notebook card */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{background:#f3ead6;color:#2b2416;border-radius:6px;padding:12px 14px 14px;background-image:repeating-linear-gradient(#f3ead6 0 21px,#d9cdb2 21px 22px);box-shadow:0 6px 20px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:6px}
+.card .k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a6d33;font-weight:600}
+.card h3{font-size:18px;color:#2b2416}
+.card p{margin:0;font-size:14px;line-height:22px}
+.card .fx{font-family:var(--f-mono);font-size:13px;color:#7a3e00}
+.card svg{width:100%;height:auto;max-height:84px}
+.card.locked{background:var(--panel);background-image:none;color:var(--muted);box-shadow:none;border:1px dashed var(--line);min-height:140px;align-items:center;justify-content:center;text-align:center}
+.nb-beam{stroke:#d07800;stroke-width:2;fill:none}
+.nb-ink{stroke:#5a4c33;stroke-width:1.6;fill:none}
+.nb-fill{fill:#5a4c33}
+.nb-glass{fill:rgba(60,140,190,.22);stroke:#2c6f96;stroke-width:1.5}
+.nb-t{font:600 10px var(--f-body);fill:#5a4c33}
+.nb-led{fill:#ffb547;stroke:#d07800}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:40;background:rgba(4,10,15,.72);display:grid;place-items:center;padding:16px;overflow-y:auto}
+.sheet{width:min(100%,420px);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.sheet h2{font-size:26px}
+.bigstars{display:flex;justify-content:center;gap:10px}
+.bigstars svg{width:56px;height:56px}
+.bigstars .st-on{animation:pop .45s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes pop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+.checks{display:grid;gap:4px;font-size:13px;margin:0;padding:0;list-style:none}
+.checks li{display:flex;gap:8px}
+.checks .y{color:var(--good)} .checks .n{color:var(--muted)}
+.pad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,40px);gap:4px;justify-content:center}
+.pad button{border:1px solid var(--line);background:var(--panel);border-radius:10px;display:grid;place-items:center;touch-action:none}
+.pad button svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.pad .u{grid-area:1/2}.pad .l{grid-area:2/1}.pad .r{grid-area:2/3}.pad .d{grid-area:3/2}
+.pad span{grid-area:2/2;font-size:9px;text-align:center;color:var(--muted);align-self:center;line-height:1.15;letter-spacing:.06em;text-transform:uppercase}
+.ctl{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+.ctl input[type=range]{width:100%;accent-color:var(--beam)}
+.ctl .seg{width:100%}.ctl .seg button{flex:1}
+.viewbox canvas.pan{cursor:grab;touch-action:none}
+.lvl.free .n{background:var(--beam);color:#2a1700;border-color:var(--beam)}
+@media (prefers-reduced-motion:reduce){.bigstars .st-on{animation:none}.meter .bar i{transition:none}}
+@media (min-width:760px){.stage{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}.viewbox{max-width:300px}}
+</style>
+</head>
+<body>
+
+<div id="app" aria-hidden="false">
+  <header class="top">
+    <button class="icon-btn" id="btnMenu" aria-label="Levels"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <div class="ttl"><small id="lvlNum">Level 1</small><h2 id="lvlTitle">Light path</h2></div>
+    <button class="icon-btn" id="btnHint"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>Hint</button>
+    <button class="icon-btn" id="btnSettings" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
+  <p class="goal" id="goal"></p>
+  <main class="stage">
+    <section class="bench" id="benchWrap" aria-label="Optical bench"><canvas id="bench" tabindex="0"></canvas></section>
+    <aside class="side">
+      <div class="viewbox"><canvas id="view" aria-label="What your eye sees"></canvas><span class="cap" id="viewCap">Eyepiece view</span></div>
+      <div class="meter" id="meter" hidden><span id="meterLbl">Sharpness</span> <span class="mono" id="meterVal"></span><div class="bar"><i id="meterBar" style="width:0%"></i></div></div>
+      <div class="rows" id="readouts"></div>
+      <div class="formula" id="formula" hidden></div>
+      <div class="quiz" id="quiz" hidden></div>
+      <div class="pad" id="pad" hidden>
+        <button class="u" data-dx="0" data-dy="-1" aria-label="Move slide up"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
+        <button class="l" data-dx="-1" data-dy="0" aria-label="Move slide left"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <span>move<br>slide</span>
+        <button class="r" data-dx="1" data-dy="0" aria-label="Move slide right"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button class="d" data-dx="0" data-dy="1" aria-label="Move slide down"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      </div>
+      <label class="ctl" id="ledWrap" hidden><span>Light (LED) <span class="mono" id="ledVal"></span></span><input type="range" id="led" min="0" max="100" value="40"></label>
+      <div class="ctl" id="specWrap" hidden><span>Sample on the slide</span><div class="seg" id="specSeg"><button data-spec="ant">Ant</button><button data-spec="cells">Cells</button><button data-spec="letter">Letter</button></div></div>
+      <div id="chipsWrap" hidden><div class="chips-h" id="chipsH">Lens tray</div><div class="chips" id="chips"></div></div>
+    </aside>
+  </main>
+  <footer class="actions">
+    <div class="nudge" id="nudge" hidden>
+      <button id="nDown" aria-label="Move down"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>1 mm</button>
+      <button id="nUp" aria-label="Move up"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>1 mm</button>
+    </div>
+    <button class="primary" id="btnMain">Check</button>
+  </footer>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<!-- Home -->
+<section class="screen" id="home">
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1>Lens<br><span>Lab</span></h1>
+        <p>Build a microscope on a virtual optical bench. Every image comes from real lens physics, so a lens in the wrong place really does give a blurry picture.</p>
+      </div>
+      <svg viewBox="0 0 120 220" aria-hidden="true">
+        <rect x="44" y="8" width="32" height="200" rx="6" fill="#132230" stroke="#28404f"/>
+        <ellipse cx="60" cy="200" rx="9" ry="5" fill="#ffb547"/>
+        <rect x="30" y="160" width="60" height="5" rx="2" fill="#5d7487"/>
+        <path d="M60 165L46 120L74 46L60 18M60 165L74 120L46 46L60 18" stroke="#ffb547" stroke-width="1.6" fill="none" opacity=".9"/>
+        <path d="M36 120q24-10 48 0q-24 10-48 0z" fill="rgba(154,217,255,.25)" stroke="#9ad9ff" stroke-width="1.5"/>
+        <path d="M36 46q24-8 48 0q-24 8-48 0z" fill="rgba(154,217,255,.25)" stroke="#9ad9ff" stroke-width="1.5"/>
+        <path d="M42 14q18-11 36 0q-18 11-36 0z" fill="#e8f0f4"/><circle cx="60" cy="14" r="4" fill="#0c1620"/>
+      </svg>
+    </div>
+    <button class="big" id="btnPlay">Start</button>
+    <div class="row2"><button class="ghost" id="btnLevels">Levels</button><button class="ghost" id="btnNotebook">Lab notebook</button></div>
+    <button class="ghost" id="btnFree">Free lab: experiment with any lens</button>
+    <div class="settings" id="settingsHome"></div>
+    <p class="note">Progress is saved on this device only. Ages 10+. About 15–20 minutes for all eight levels.</p>
+  </div>
+</section>
+
+<!-- Levels -->
+<section class="screen" id="levels" hidden>
+  <div class="wrap">
+    <div class="sec-h"><h2>Levels</h2><button class="icon-btn" data-go="home">Home</button></div>
+    <div class="lvls" id="lvlList"></div>
+  </div>
+</section>
+
+<!-- Notebook -->
+<section class="screen" id="notebook" hidden>
+  <div class="wrap">
+    <div class="sec-h"><h2>Lab notebook</h2><button class="icon-btn" data-go="back">Back</button></div>
+    <p class="note">Each level you finish adds a card. Together they make your revision sheet.</p>
+    <div class="cards" id="nbCards"></div>
+  </div>
+</section>
+
+<!-- Result / settings modals -->
+<div class="modal" id="result" hidden><div class="sheet" id="resultSheet"></div></div>
+<div class="modal" id="settingsModal" hidden><div class="sheet"><div class="sec-h"><h2>Settings</h2><button class="icon-btn" id="closeSettings">Done</button></div><div class="settings" id="settingsGame"></div></div></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const KEY = 'lenslab.v1';
+const save = { stars: {}, mode: 'easy', formula: false, sound: true };
+try { Object.assign(save, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+function persist() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }
+const easy = () => save.mode === 'easy';
+
+/* ---------------- sound (generated, no files) ---------------- */
+let ac = null;
+function audio() {
+  if (!save.sound) return null;
+  try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); return ac; } catch (e) { return null; }
+}
+function tone(freq, dur, type = 'sine', vol = .15, when = 0, slide = 0) {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + when, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t + dur);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + .03);
+}
+const sfx = {
+  snap() { tone(1500, .04, 'square', .05); tone(240, .14, 'sine', .2, 0, .5); },
+  tick() { tone(2400, .02, 'triangle', .035); },
+  pick() { tone(700, .06, 'sine', .08); },
+  good() { [523, 659, 784, 1047].forEach((f, i) => tone(f, .2, 'triangle', .11, i * .08)); },
+  star(i) { tone(880 * Math.pow(1.26, i), .3, 'sine', .14); tone(1760 * Math.pow(1.26, i), .2, 'sine', .04); },
+  bad() { tone(190, .25, 'sawtooth', .06, 0, .7); }
+};
+let lastTick = 0;
+function focusTick() { const n = performance.now(); if (n - lastTick > 60) { lastTick = n; sfx.tick(); } }
+
+/* ---------------- physics: paraxial ray-transfer matrices (mm) ----------------
+   A ray is (height y, angle θ). Free space d: [1 d; 0 1]. Thin lens f: [1 0; -1/f 1].
+   For the system from sample plane to eye, [A B; C D]:
+   - angular zoom vs. the naked eye at 250 mm = 250 / B   (sign < 0 means the image is upside down)
+   - the light leaving each sample point looks like it comes from a point 1/(D/B) mm away;
+     a relaxed-to-near eye can focus from infinity down to 250 mm, anything else is blur.            */
+const NEAR = 250, PUPIL = 2, FIELD = 0.17;   // near point mm, eye pupil mm, half-field of view (rad)
+const mul = (a, b) => [a[0]*b[0] + a[1]*b[2], a[0]*b[1] + a[1]*b[3], a[2]*b[0] + a[3]*b[2], a[2]*b[1] + a[3]*b[3]];
+const Pm = d => [1, d, 0, 1], Lm = f => [1, 0, -1 / f, 1];
+function system(zObj, lenses, zEye) {
+  let M = [1, 0, 0, 1], z = zObj;
+  for (const l of lenses.filter(l => l.z > zObj && l.z < zEye).sort((a, b) => a.z - b.z)) { M = mul(Pm(l.z - z), M); M = mul(Lm(l.f), M); z = l.z; }
+  return mul(Pm(zEye - z), M);
+}
+function eyeView(zObj, lenses, zEye) {
+  const [, B0, , D] = system(zObj, lenses, zEye);
+  const B = Math.abs(B0) < 1e-3 ? (B0 < 0 ? -1e-3 : 1e-3) : B0;
+  const verg = D / B;                                           // >0 diverging, <0 converging (1/mm)
+  const defocus = verg < 0 ? -verg : Math.max(0, verg - 1 / NEAR);
+  const blur = defocus * PUPIL;                                  // blur angle, rad
+  return { B, zoom: Math.abs(NEAR / B), inverted: B < 0, blur, sharp: 100 / (1 + (blur / .0025) ** 2), verg };
+}
+function traceFan(zObj, h, lenses, zEnd, n) {
+  const ls = lenses.filter(l => l.z > zObj && l.z < zEnd).sort((a, b) => a.z - b.z), out = [];
+  const tgtZ = ls.length ? ls[0].z : zEnd, tgtR = ls.length ? ls[0].r : 6;
+  for (let i = 0; i < n; i++) {
+    const yt = (-.85 + 1.7 * i / (n - 1)) * tgtR;
+    let th = (yt - h) / (tgtZ - zObj), y = h, z = zObj, ok = true;
+    const pts = [[y, z]];
+    for (const l of ls) { y += th * (l.z - z); z = l.z; pts.push([y, z]); if (Math.abs(y) > l.r) { ok = false; break; } th -= y / l.f; }
+    if (ok) { y += th * (zEnd - z); pts.push([y, zEnd]); }
+    out.push(pts);
+  }
+  return out;
+}
+
+/* ---------------- lens catalogue ---------------- */
+const LENS = {
+  m100: { id: 'm100', f: 100, r: 12, name: 'f 100 mm', z: '2.5×' },
+  m50:  { id: 'm50',  f: 50,  r: 12, name: 'f 50 mm',  z: '5×' },
+  m25:  { id: 'm25',  f: 25,  r: 10, name: 'f 25 mm',  z: '10×' },
+  o4:   { id: 'o4',  kind: 'obj', m: 4,  f: 36,     r: 5,   name: 'Objective', z: '4×' },
+  o10:  { id: 'o10', kind: 'obj', m: 10, f: 180/11, r: 3.5, name: 'Objective', z: '10×' },
+  o40:  { id: 'o40', kind: 'obj', m: 40, f: 180/41, r: 2,   name: 'Objective', z: '40×' },
+  o100: { id: 'o100', kind: 'obj', m: 100, f: 180/101, r: 1.5, name: 'Objective', z: '100×' },
+  k16:  { id: 'k16', f: 16, r: 4.5, name: 'f 16 mm' },
+  k25:  { id: 'k25', f: 25, r: 7,   name: 'f 25 mm' },
+  e5:   { id: 'e5',  kind: 'eye', m: 5,  f: 50,   r: 8, name: 'Eyepiece', z: '5×' },
+  e10:  { id: 'e10', kind: 'eye', m: 10, f: 25,   r: 7, name: 'Eyepiece', z: '10×' },
+  e20:  { id: 'e20', kind: 'eye', m: 20, f: 12.5, r: 5, name: 'Eyepiece', z: '20×' }
+};
+const TUBE = 180;   // objective-to-first-image distance in level 5 (mm)
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const fmt = (v, d = 0) => (Math.round(v * 10 ** d) / 10 ** d).toFixed(d);
+
+/* ---------------- game state ---------------- */
+const S = {};
+let L = null, dirty = true, handles = [];
+
+function lensSVG(f) {
+  const t = clamp(260 / f, 2.5, 9);
+  return `<svg viewBox="0 0 40 22"><path d="M2 11Q20 ${11 - t * 1.1} 38 11Q20 ${11 + t * 1.1} 2 11Z" fill="rgba(154,217,255,.25)" stroke="#9ad9ff" stroke-width="1.4"/></svg>`;
+}
+
+const LV = {
+1: {
+  title: 'Light path', learn: 'Light travels in straight lines', par: 3,
+  goal: () => 'Drag the <b>sample tray</b> and the <b>eye</b> sideways until light from the LED shines through the sample into your eye.',
+  hints: ['Light only travels in straight lines. The LED, the hole in the tray and your eye have to sit on one straight line.', 'Drag the tray until its hole is right above the LED. Then drag the eye until it sits straight above both.'],
+  setup() { Object.assign(S, { zMax: 320, xHalf: 34, tray: { x: 22, z: 60 }, eye: { x: -20, z: 300 } }); },
+  compute() {
+    const c = .035, w = 5, p = 4, zt = S.tray.z, ze = S.eye.z;
+    const lo = Math.max(-c, (S.tray.x - w) / zt, (S.eye.x - p) / ze), hi = Math.min(c, (S.tray.x + w) / zt, (S.eye.x + p) / ze);
+    S.bright = clamp(Math.max(0, hi - lo) / (2 * p / ze), 0, 1);
+    S.view = Object.assign(eyeView(zt, [], ze), { type: 'eye', bright: S.bright, offX: (S.tray.x - S.eye.x) / (ze - zt) });
+  },
+  bench(g) {
+    drawLED(g, 0);
+    const c = .035, w = 5, p = 4, zt = S.tray.z, ze = S.eye.z;
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 19; i++) {
+      const t = -c + 2 * c * i / 18, xt = t * zt;
+      const pass = Math.abs(xt - S.tray.x) < w, xe = t * ze, hit = pass && Math.abs(xe - S.eye.x) < p;
+      ray(g, [[0, 0], pass ? [t * (ze + 14), ze + 14] : [xt, zt]], hit ? 'rgba(255,200,90,.95)' : 'rgba(255,181,71,.35)', hit ? 2 : 1.1);
+    }
+    g.restore();
+    drawTray(g, S.tray.x, zt, { window: w, plate: true });
+    drawEye(g, S.eye.x, ze, S.bright > .05);
+    handles.push(hRect(S.tray.x - 30, zt - 4, S.tray.x + 30, zt + 6, 'x', () => S.tray.x, v => S.tray.x = v, -30, 30));
+    handles.push(hRect(S.eye.x - 9, ze - 8, S.eye.x + 9, ze + 8, 'x', () => S.eye.x, v => S.eye.x = v, -30, 30));
+    label(g, 'drag', S.tray.x + 12, zt + 5, '#91a7b6');
+  },
+  rows() { return easy() ? [['Light reaching eye', fmt(S.bright * 100) + '%']] : []; },
+  formula() { return '<span class="lbl">The rule</span>Light goes in straight lines. No lens yet, so no formula.'; },
+  check() {
+    if (S.bright >= .9) return { ok: true, acc: S.bright >= .99 };
+    return { ok: false, msg: S.bright > 0 ? `Only ${fmt(S.bright * 100)}% of the light gets to your eye. Line up the LED, the hole and the eye.` : 'No light reaches your eye yet, so you see nothing. Light needs a straight path from the LED, through the hole, to your eye.' };
+  },
+  card: { title: 'Light path', line: 'Light travels in straight lines. You see the sample only when light passes through it and on into your eye.',
+    svg: '<svg viewBox="0 0 160 60"><circle cx="14" cy="30" r="7" class="nb-led"/><line x1="21" y1="30" x2="132" y2="30" class="nb-beam"/><rect x="72" y="8" width="5" height="16" class="nb-fill"/><rect x="72" y="36" width="5" height="16" class="nb-fill"/><path d="M134 30q11-10 22 0q-11 10-22 0z" class="nb-ink"/><circle cx="145" cy="30" r="3" class="nb-fill"/><text x="6" y="56" class="nb-t">LED</text><text x="62" y="6" class="nb-t" dy="0">sample</text><text x="138" y="54" class="nb-t">eye</text></svg>' }
+},
+2: {
+  title: 'Find the focal point', learn: 'Focal point and focal length', par: 6,
+  goal: () => S.marked == null ? 'Slide the lens up or down under the sunlight until the light makes the <b>smallest, brightest dot</b> on the paper. Then press <b>Mark focus</b>.' : 'Read your measurement and pick the lens\'s <b>focal length</b>.',
+  hints: ['Drag the lens up and down (or use the arrow buttons). Watch the dot on the paper shrink and grow.', 'When the dot is smallest, the lens-to-paper distance is the focal length. Read it on the ruler on the left.'],
+  setup() {
+    Object.assign(S, { zMax: 200, xHalf: 16, f2: shuffle([45, 60, 75, 90])[0], lensZ: 160, marked: null });
+    const set = new Set([S.f2]); for (const c of shuffle([S.f2 - 15, S.f2 + 15, S.f2 + 30, S.f2 - 30, S.f2 * 2]).filter(v => v >= 20 && v <= 190)) { if (set.size >= 4) break; set.add(c); }
+    S.opts = [...set].sort((a, b) => a - b);
+  },
+  nudge: { get: () => S.lensZ, set: v => S.lensZ = v, min: 15, max: 190 },
+  compute() {
+    const r = 12 * Math.abs(1 - S.lensZ / S.f2) + .35;
+    S.spot = r; S.dot = 100 * Math.min(1, Math.pow(.36 / r, .6));
+    S.view = { type: 'paper', r };
+  },
+  bench(g) {
+    const f = S.f2, zl = S.lensZ, a = 12;
+    // sun
+    const sy = MP.Y(S.zMax) - 4;
+    g.fillStyle = '#ffd257'; g.beginPath(); g.arc(BW - 22, sy + 4, 7, 0, 7); g.fill();
+    label(g, 'sunlight', MP.X(-15), MP.Y(S.zMax) + 2, '#ffd257');
+    // paper
+    g.fillStyle = '#e8e0cf'; g.fillRect(MP.X(-15), MP.Y(0), MP.X(15) - MP.X(-15), 5);
+    label(g, 'paper', MP.X(4), MP.Y(0) + 15, '#91a7b6');
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 9; i++) {
+      const x = -a * .9 + 1.8 * a * .9 * i / 8;
+      ray(g, [[x, S.zMax], [x, zl], [x * (1 - zl / f), 0]], 'rgba(255,190,80,.8)', 1.3);
+    }
+    // dot on paper
+    const rx = Math.max(1.5, S.spot * MP.xs);
+    const gr = g.createRadialGradient(MP.X(0), MP.Y(0), 0, MP.X(0), MP.Y(0), rx + 3);
+    gr.addColorStop(0, `rgba(255,240,180,${.3 + .7 * S.dot / 100})`); gr.addColorStop(1, 'rgba(255,200,80,0)');
+    g.fillStyle = gr; g.fillRect(MP.X(0) - rx - 4, MP.Y(0) - 6, 2 * rx + 8, 12);
+    g.restore();
+    drawLens(g, { z: zl, r: a, f }, '?');
+    // measure line to ruler
+    g.setLineDash([3, 3]); g.strokeStyle = 'rgba(154,217,255,.5)'; g.beginPath(); g.moveTo(26, MP.Y(zl)); g.lineTo(MP.X(-a), MP.Y(zl)); g.stroke(); g.setLineDash([]);
+    if (S.marked != null) { g.strokeStyle = '#72dd92'; g.beginPath(); g.moveTo(16, MP.Y(S.marked)); g.lineTo(34, MP.Y(S.marked)); g.stroke(); }
+    handles.push(hRect(-a, zl - 8 / MP.zs, a, zl + 8 / MP.zs, 'z', () => S.lensZ, v => S.lensZ = v, 15, 190));
+  },
+  ruler: true,
+  meter: () => ['Dot brightness', S.dot],
+  rows() { return easy() ? [['Lens to paper', fmt(S.lensZ) + ' mm']].concat(S.marked != null ? [['You marked', fmt(S.marked) + ' mm']] : []) : (S.marked != null ? [['Marked', 'green line on ruler']] : []); },
+  formula() {
+    return '<span class="lbl">Lens formula</span>1/f = 1/u + 1/v<br>Sunlight comes from very far away, so u = ∞ and 1/u = 0.<br>So <em>f = v</em>: the lens-to-dot distance.' + (easy() ? `<br>v now = ${fmt(S.lensZ)} mm` : '');
+  },
+  mainLabel: () => S.marked == null ? 'Mark focus' : 'Measure again',
+  main() {
+    if (S.marked == null) { S.marked = S.lensZ; countMove(true); sfx.snap(); renderQuiz(); }
+    else { S.marked = null; renderQuiz(); }
+    refreshGoal(); dirty = true;
+  },
+  answer(v) {
+    if (v === S.f2) { finish(Math.abs(S.marked - S.f2) <= 4); }
+    else { countMove(true); sfx.bad(); toast(`Not ${v} mm. Check the dot is as small as it gets, then read the ruler again.`, 'bad'); }
+  },
+  card: { title: 'Focal point', line: 'Parallel light (like sunlight) meets at one point, the focal point. The lens-to-dot distance is the focal length f.', fx: 'u = ∞, so 1/f = 1/v and f = v',
+    svg: '<svg viewBox="0 0 160 60"><path d="M6 14H54L120 30M6 30H120M6 46H54L120 30" class="nb-beam"/><path d="M54 6q8 24 0 48q-8-24 0-48z" class="nb-glass"/><circle cx="120" cy="30" r="3.5" class="nb-led"/><path d="M54 56H120M54 52v8M120 52v8" class="nb-ink"/><text x="84" y="52" class="nb-t">f</text><text x="124" y="22" class="nb-t">focal point</text></svg>' }
+},
+3: {
+  title: 'Pick the right lens', learn: 'Shorter focal length, stronger zoom', par: 2,
+  goal: () => 'Put one lens in the holder so the ant looks exactly <b>5× bigger</b>. Then press <b>Check</b>.',
+  hints: ['Zoom ≈ 250 ÷ focal length (in mm). Try it for each lens.', '250 ÷ 50 = 5. Which lens has f = 50 mm?'],
+  setup() {
+    Object.assign(S, { zMax: 226, xHalf: 16, tray: { x: 0, z: 120 }, eye: { x: 0, z: 212 }, tube: [] });
+    S.trayLenses = shuffle([LENS.m100, LENS.m50, LENS.m25]);
+  },
+  place(def) {
+    if (S.tube[0] && S.tube[0].def === def) { S.tube = []; sfx.pick(); }
+    else { S.tube = [{ def, z: 200 }]; S.trayTarget = 200 - def.f; sfx.snap(); }
+    countMove(true);
+  },
+  compute() { computeEye(); },
+  bench(g) {
+    drawLED(g, 0); illum(g);
+    drawSlot(g, 200, 13, 'lens holder');
+    drawTray(g, 0, S.tray.z, {});
+    lensRays(g, 2);
+    S.tube.forEach(t => { drawLens(g, { z: t.z, r: t.def.r, f: t.def.f }, 'f ' + t.def.f); handles.push(hRect(-t.def.r, t.z - 5, t.def.r, t.z + 5, 'tap', null, null, 0, 0, () => { LV[3].place(t.def); dirty = true; })); });
+    drawEye(g, 0, S.eye.z, true);
+  },
+  rows() { return S.tube.length && easy() ? [['Zoom', fmt(S.view.zoom, 1) + '×'], ['Focal length', S.tube[0].def.f + ' mm']] : (S.tube.length ? [] : [['Zoom', 'no lens']]); },
+  formula() {
+    const l = S.tube[0];
+    return '<span class="lbl">Magnifier zoom</span>Zoom ≈ 250 ÷ f' + (l && easy() ? `<br>= 250 ÷ ${l.def.f} = <em>${fmt(250 / l.def.f, 1)}×</em>` : '<br><span style="color:var(--muted)">250 mm is the closest a normal eye can see clearly.</span>');
+  },
+  check() {
+    const l = S.tube[0];
+    if (!l) return { ok: false, msg: 'Put a lens in the holder first. Drag one from the lens tray, or tap it.' };
+    if (l.def.f === 50) return { ok: true, acc: S.checks === 0 };
+    const z = 250 / l.def.f;
+    return { ok: false, msg: z > 5 ? `This lens gives about ${fmt(z, 1)}×. Too strong. A longer focal length gives less zoom.` : `This lens gives about ${fmt(z, 1)}×. Too weak. A shorter focal length gives more zoom.` };
+  },
+  card: { title: 'Zoom and focal length', line: 'A fatter lens with a shorter focal length bends light more and zooms more.', fx: 'zoom ≈ 250 ÷ f',
+    svg: '<svg viewBox="0 0 160 64"><path d="M20 8q5 18 0 36q-5-18 0-36z" class="nb-glass"/><path d="M80 8q9 18 0 36q-9-18 0-36z" class="nb-glass"/><path d="M140 8q15 18 0 36q-15-18 0-36z" class="nb-glass"/><text x="2" y="56" class="nb-t">f 100: 2.5×</text><text x="62" y="56" class="nb-t">f 50: 5×</text><text x="118" y="56" class="nb-t">f 25: 10×</text></svg>' }
+},
+4: {
+  title: 'Focus it', learn: 'Object distance and focus', par: 6,
+  goal: () => 'The ant is blurry. Drag the <b>sample tray</b> up or down until the sharpness meter is full. Then press <b>Check</b>.',
+  hints: ['The sample is too far from the lens. Move the tray up, closer to the lens.', 'Aim for the sample to sit about 50 mm below the lens (its focal length). Use the arrow buttons for small steps.'],
+  setup() { Object.assign(S, { zMax: 226, xHalf: 16, tray: { x: 0, z: 100 }, eye: { x: 0, z: 212 }, tube: [{ def: LENS.m50, z: 200, fixed: true }] }); },
+  nudge: { get: () => S.tray.z, set: v => S.tray.z = v, min: 20, max: 194 },
+  compute() { computeEye(); },
+  bench(g) {
+    drawLED(g, 0); illum(g);
+    drawTray(g, 0, S.tray.z, {});
+    lensRays(g, 2);
+    drawLens(g, { z: 200, r: 12, f: 50 }, 'f 50');
+    drawEye(g, 0, S.eye.z, true);
+    if (easy()) { g.setLineDash([3, 4]); g.strokeStyle = 'rgba(127,227,200,.55)'; g.beginPath(); g.moveTo(MP.X(-15), MP.Y(150)); g.lineTo(MP.X(15), MP.Y(150)); g.stroke(); g.setLineDash([]); label(g, 'focal point', MP.X(-15), MP.Y(150) - 4, '#7fe3c8'); }
+    handles.push(hRect(-24, S.tray.z - 6 / MP.zs, 24, S.tray.z + 10 / MP.zs, 'z', () => S.tray.z, v => S.tray.z = v, 20, 194));
+    label(g, 'drag tray', MP.X(-15), MP.Y(S.tray.z) + 16, '#91a7b6');
+  },
+  ruler: true,
+  meter: () => ['Sharpness', S.view.sharp],
+  rows() { const u = 200 - S.tray.z; return easy() ? [['Sample to lens (u)', fmt(u, 1) + ' mm'], ['Focal length (f)', '50 mm'], ['Zoom', fmt(S.view.zoom, 1) + '×']] : []; },
+  formula() {
+    const u = 200 - S.tray.z, f = 50;
+    if (!easy()) return '<span class="lbl">Lens formula</span>1/f = 1/u + 1/v<br>If v comes out negative, the image is virtual: your eye can see it through the lens.';
+    let res;
+    if (Math.abs(u - f) < .05) res = 'v = ∞ (relaxed eye, sharp)';
+    else { const v = 1 / (1 / f - 1 / u); res = v > 0 ? `v = +${fmt(v)} mm: a real image past your eye, so <em>blurry</em>` : `v = ${fmt(v)} mm: virtual image, ${-v + 12 >= 238 ? '<em>eye can focus</em>' : 'too close for the eye'}`; }
+    return `<span class="lbl">Lens formula</span>1/f = 1/u + 1/v<br>1/v = 1/${f} − 1/${fmt(u, 1)}<br>${res}`;
+  },
+  check() {
+    const s = S.view.sharp;
+    if (s >= 80) return { ok: true, acc: s >= 97 };
+    return { ok: false, msg: `Still blurry (sharpness ${fmt(s)}%). ` + (S.view.verg < 0 ? 'The sample is too far from the lens: move the tray up.' : 'The sample is too close to the lens: move the tray down a little.') };
+  },
+  card: { title: 'Focus', line: 'Focusing changes the gap u between sample and lens. It is sharp when the sample sits at, or just inside, the focal length.', fx: '1/f = 1/u + 1/v',
+    svg: '<svg viewBox="0 0 160 60"><path d="M30 30L80 12H150M30 30L80 30H150M30 30L80 48H150" class="nb-beam"/><path d="M80 4q9 26 0 52q-9-26 0-52z" class="nb-glass"/><path d="M30 20v20" class="nb-ink"/><path d="M30 56H80M30 52v8M80 52v8" class="nb-ink"/><text x="40" y="52" class="nb-t">u = f</text><text x="4" y="14" class="nb-t">sample</text></svg>' }
+},
+5: {
+  title: 'Two lenses', learn: 'Zooms multiply', par: 3,
+  goal: () => 'Build a microscope that zooms exactly <b>40×</b>. Pick one <b>objective</b> (bottom) and one <b>eyepiece</b> (top). The tray focuses by itself.',
+  hints: ['Total zoom = objective zoom × eyepiece zoom.', 'Which two numbers multiply to make 40? Try 4 × 10.'],
+  setup() {
+    Object.assign(S, { zMax: 350, xHalf: 10, tray: { x: 0, z: 40 }, eye: { x: 0, z: 336 }, tube: [] });
+    S.trayLenses = shuffle([LENS.o4, LENS.o10, LENS.o40]).concat(shuffle([LENS.e5, LENS.e10, LENS.e20]));
+  },
+  place(def) {
+    const had = S.tube.find(t => t.def === def);
+    S.tube = S.tube.filter(t => t.def.kind !== def.kind);
+    if (!had) { S.tube.push({ def, z: def.kind === 'obj' ? 100 : 280 + def.f }); sfx.snap(); } else sfx.pick();
+    const ob = S.tube.find(t => t.def.kind === 'obj'), ep = S.tube.find(t => t.def.kind === 'eye');
+    if (ob) S.trayTarget = 100 - 1 / (1 / ob.def.f - 1 / TUBE);
+    S.eye.z = ep ? ep.z + 10 : 336;
+    countMove(true);
+  },
+  compute() { computeEye(); },
+  bench(g) {
+    drawLED(g, 0); illum(g);
+    drawSlot(g, 100, 6, 'objective');
+    drawSlot(g, 300, 9, 'eyepiece');
+    const ob = S.tube.find(t => t.def.kind === 'obj');
+    if (ob) {
+      g.setLineDash([2, 4]); g.strokeStyle = 'rgba(127,227,200,.6)'; g.beginPath(); g.moveTo(MP.X(-9), MP.Y(280)); g.lineTo(MP.X(9), MP.Y(280)); g.stroke(); g.setLineDash([]);
+      label(g, 'first image (flipped)', MP.X(-9.5), MP.Y(280) - 4, '#7fe3c8');
+    }
+    drawTray(g, 0, S.tray.z, {});
+    lensRays(g, 5);
+    S.tube.forEach(t => { drawLens(g, { z: t.z, r: t.def.r, f: t.def.f }, t.def.z); handles.push(hRect(-t.def.r, t.z - 5, t.def.r, t.z + 5, 'tap', null, null, 0, 0, () => { LV[5].place(t.def); dirty = true; })); });
+    drawEye(g, 0, S.eye.z, true);
+  },
+  rows() {
+    const ob = S.tube.find(t => t.def.kind === 'obj'), ep = S.tube.find(t => t.def.kind === 'eye');
+    const r = [['Objective', ob ? ob.def.z : 'none'], ['Eyepiece', ep ? ep.def.z : 'none']];
+    if (easy() && ob && ep) r.push(['Total zoom', fmt(S.view.zoom, 1) + '×']);
+    if (easy() && ob && ep) r.push(['Image', S.view.inverted ? 'upside down' : 'upright']);
+    return r;
+  },
+  meter: () => ['Sharpness', S.view.sharp],
+  formula() {
+    const ob = S.tube.find(t => t.def.kind === 'obj'), ep = S.tube.find(t => t.def.kind === 'eye');
+    let s = '<span class="lbl">Two-lens zoom</span>Total = objective × eyepiece';
+    if (easy() && ob && ep) { const u = 1 / (1 / ob.def.f - 1 / TUBE); s += `<br>Objective: v ÷ u = ${TUBE} ÷ ${fmt(u, 1)} = ${ob.def.m}×<br>Eyepiece: 250 ÷ f = 250 ÷ ${fmt(ep.def.f, 1)} = ${ep.def.m}×<br>Total = ${ob.def.m} × ${ep.def.m} = <em>${ob.def.m * ep.def.m}×</em>`; }
+    return s;
+  },
+  check() {
+    const ob = S.tube.find(t => t.def.kind === 'obj'), ep = S.tube.find(t => t.def.kind === 'eye');
+    if (!ob || !ep) return { ok: false, msg: 'A microscope needs two lenses: one objective near the sample and one eyepiece near your eye.' };
+    const tot = ob.def.m * ep.def.m;
+    if (tot === 40) return { ok: true, acc: S.checks === 0 };
+    return { ok: false, msg: `${ob.def.m}× × ${ep.def.m}× = ${tot}×. ${tot > 40 ? 'Too much zoom.' : 'Not enough zoom.'} Aim for 40×.` };
+  },
+  card: { title: 'Two lenses', line: 'In a microscope the objective makes a bigger image, and the eyepiece magnifies that image again. The zooms multiply.', fx: 'total = objective × eyepiece (4 × 10 = 40)',
+    svg: '<svg viewBox="0 0 160 60"><path d="M8 30L40 18L96 44L130 22H156M8 30L40 42L96 16L130 38H156" class="nb-beam"/><path d="M40 10q6 20 0 40q-6-20 0-40z" class="nb-glass"/><path d="M130 6q10 24 0 48q-10-24 0-48z" class="nb-glass"/><text x="30" y="58" class="nb-t">4×</text><text x="120" y="60" class="nb-t">10×</text><text x="74" y="10" class="nb-t">= 40×</text></svg>' }
+},
+6: {
+  title: 'The trade-off', learn: 'More zoom: smaller view, dimmer image', par: 8, pan: true,
+  goal: () => 'Make the <b>purple cell</b> fill at least a fifth of the view. Don\'t lose it off the edge, and keep it bright enough to see. Drag the view to move the slide.',
+  hints: ['First centre the purple cell at low zoom: drag the eyepiece view until the cell is in the middle.', 'Each stronger objective shows a smaller area and less light. Turn up the light slider when it gets dark.', 'The 40× objective (400× in total) works. At 100× this lamp is too weak, even at full power.'],
+  setup() {
+    Object.assign(S, { zMax: 350, xHalf: 10, tray: { x: 0, z: 55 }, eye: { x: 0, z: 315 }, spec: 'cells', led: .4, stage: { x: -.42, y: .32 } });
+    S.tube = [{ def: LENS.o4, z: 100 }, { def: LENS.e10, z: 305, fixed: true }];
+    S.trayLenses = [LENS.o4, LENS.o10, LENS.o40, LENS.o100];
+  },
+  place(def) {
+    if (S.tube.some(t => t.def === def)) return;
+    S.tube = S.tube.filter(t => t.def.kind !== 'obj'); S.tube.push({ def, z: 100 });
+    S.trayTarget = 100 - 1 / (1 / def.f - 1 / TUBE); sfx.snap(); countMove(true);
+  },
+  compute() {
+    computeEye();
+    const M = S.view.zoom, cellAng = .06 * M / NEAR;
+    S.offAng = Math.hypot(S.stage.x, S.stage.y) * M / NEAR;
+    S.cellFrac = cellAng / (2 * FIELD);
+    S.inView = S.offAng < FIELD - cellAng * .3;
+  },
+  bench(g) { benchScope(g); },
+  meter: () => ['Brightness', S.view.bright * 100],
+  rows() {
+    const ob = S.tube.find(t => t.def.kind === 'obj');
+    if (!easy()) return [['Objective', ob.def.z]];
+    return [['Objective', ob.def.z], ['Total zoom', fmt(S.view.zoom) + '×'], ['View shows', fmt(2 * FIELD * Math.abs(S.view.B) * 1000) + ' µm across'], ['Cell size', S.inView ? fmt(S.cellFrac * 100) + '% of view' : 'out of view']];
+  },
+  formula() {
+    return '<span class="lbl">The trade-off</span>Field of view ∝ 1 ÷ zoom<br>Brightness ∝ (NA ÷ zoom)²<br><span style="color:var(--muted)">NA (numerical aperture) is how wide a cone of light the objective catches.</span>' +
+      (easy() ? `<br>NA now ≈ ${fmt(S.view.na || 0, 2)}, zoom ${fmt(S.view.zoom)}×` : '');
+  },
+  check() {
+    if (!S.inView) return { ok: false, msg: 'The cell has gone out of view. Go back to a weaker objective, centre the cell, then zoom in again.' };
+    if (S.cellFrac < .2) return { ok: false, msg: `The cell is still small (${fmt(S.cellFrac * 100)}% of the view). Zoom in more.` };
+    if (S.view.bright < .32) return { ok: false, msg: S.led > .97 ? 'Too dark, even with the light at full power. This much zoom spreads the light too thin. Try one objective weaker.' : 'Too dark to see the cell clearly. Turn up the light.' };
+    return { ok: true, acc: S.offAng < FIELD * .35 };
+  },
+  card: { title: 'The trade-off', line: 'More zoom shows a smaller part of the slide and makes the image dimmer. Centre the thing you want at low zoom first, then zoom in and turn up the light.', fx: 'field of view ∝ 1 ÷ zoom, brightness ∝ (NA ÷ zoom)²',
+    svg: '<svg viewBox="0 0 160 60"><circle cx="26" cy="30" r="22" fill="#fff4d8" stroke="#5a4c33"/><circle cx="80" cy="30" r="22" fill="#d8c9a4" stroke="#5a4c33"/><circle cx="134" cy="30" r="22" fill="#8a7d63" stroke="#5a4c33"/><circle cx="30" cy="27" r="2" fill="#8a2fa0"/><circle cx="82" cy="29" r="6" fill="#8a2fa0"/><circle cx="134" cy="30" r="14" fill="#8a2fa0"/><text x="16" y="60" class="nb-t">40×</text><text x="68" y="60" class="nb-t">100×</text><text x="122" y="60" class="nb-t">400×</text></svg>' }
+},
+7: {
+  title: 'Build it yourself', learn: 'Where each lens goes in a microscope', par: 8, step: .5,
+  goal: () => 'Build your own microscope from two loose lenses. Get a <b>sharp</b> view of the ant at <b>60× or more</b>. Drag each lens up or down the tube.',
+  hints: ['Put the strong lens (f 16 mm) low down, close to the sample. It makes a first, flipped image higher up the tube.', 'Move the top lens until its focal point (blue dashes) sits on the first image (green dashes).', 'Not enough zoom? Lower the bottom lens a little towards the sample. The first image jumps higher, so refocus the top lens.'],
+  setup() {
+    Object.assign(S, { zMax: 340, xHalf: 10, tray: { x: 0, z: 40 }, eye: { x: 0, z: 326 }, sel: null });
+    S.trayLenses = shuffle([LENS.k16, LENS.k25]);
+  },
+  place(def) {
+    const had = S.tube.find(t => t.def === def);
+    if (had) { S.tube = S.tube.filter(t => t !== had); if (S.sel === had) S.sel = null; sfx.pick(); }
+    else { const t = { def, z: def.f < 20 ? 70 : 250 }; S.tube.push(t); S.sel = t; sfx.snap(); }
+    countMove(true);
+  },
+  nudge() { const t = S.sel; return t ? { get: () => t.z, set: v => t.z = v, min: S.tray.z + 2, max: S.zMax - 16 } : null; },
+  compute() { S.eye.z = S.tube.length ? Math.max(...S.tube.map(t => t.z)) + 10 : 326; computeEye(); },
+  bench(g) {
+    drawLED(g, 0); illum(g); drawTray(g, 0, S.tray.z, {});
+    const ts = S.tube.slice().sort((a, b) => a.z - b.z);
+    if (easy() && ts.length) {
+      const lo = ts[0], u = lo.z - S.tray.z;
+      if (u > lo.def.f) { const zi = lo.z + 1 / (1 / lo.def.f - 1 / u); if (zi < S.zMax) markLine(g, zi, 'first image', '#7fe3c8'); }
+      if (ts.length > 1) { const hi = ts[ts.length - 1]; markLine(g, hi.z - hi.def.f, 'top lens focal point', '#9ad9ff', true); }
+    }
+    lensRays(g, 4);
+    lensHandles(g, 'f ');
+    drawEye(g, 0, S.eye.z, true);
+  },
+  meter: () => ['Sharpness', S.tube.length ? S.view.sharp : 0],
+  rows() {
+    const ts = S.tube.slice().sort((a, b) => a.z - b.z);
+    if (!easy()) return [['Lenses placed', ts.length + ' of 2']];
+    const r = [['Zoom', ts.length ? fmt(S.view.zoom) + '×' : 'no lens'], ['Image', S.view.inverted ? 'upside down' : 'upright']];
+    if (ts[0]) r.push(['Bottom lens to sample', fmt(ts[0].z - S.tray.z, 1) + ' mm']);
+    return r;
+  },
+  formula() { return chainFormula(); },
+  check() {
+    if (S.tube.length < 2) return { ok: false, msg: 'A microscope needs both lenses in the tube. Drag them in from the lens tray.' };
+    const s = S.view.sharp, z = S.view.zoom;
+    if (s < 80) return { ok: false, msg: `Blurry (sharpness ${fmt(s)}%). Move the top lens up or down until its focal point sits on the first image.` };
+    if (z < 60) return { ok: false, msg: `Sharp, but only ${fmt(z)}×. Move the bottom lens a little closer to the sample, then refocus the top lens.` };
+    return { ok: true, acc: s >= 95 };
+  },
+  card: { title: 'Build a microscope', line: 'The objective sits close to the sample and makes a first, flipped image up the tube. The eyepiece sits one focal length above that image and magnifies it.', fx: 'objective: 1/f = 1/u + 1/v; eyepiece f above the image',
+    svg: '<svg viewBox="0 0 160 60"><path d="M8 30L30 22L100 40L130 30H156M8 30L30 38L100 20L130 30H156" class="nb-beam"/><path d="M30 14q5 16 0 32q-5-16 0-32z" class="nb-glass"/><path d="M130 8q10 22 0 44q-10-22 0-44z" class="nb-glass"/><path d="M100 14v32" class="nb-ink" stroke-dasharray="3 3"/><text x="82" y="10" class="nb-t">first image</text><text x="20" y="58" class="nb-t">objective</text><text x="112" y="60" class="nb-t">eyepiece</text></svg>' }
+},
+8: {
+  title: 'Upside-down puzzle', learn: 'Microscope images are upside down', par: 10, pad: true, crosshair: true,
+  goal: () => S.quizOn ? 'Now the tricky part: which letter is <b>really</b> printed on the slide?' : 'A letter is hiding near the edge of the view. Use the <b>arrow knobs</b> to move the slide until the letter sits in the centre of the cross. Then press <b>Check</b>.',
+  hints: ['The microscope flips the image, so the letter moves the opposite way to the slide.', 'Press the arrow that points towards where the letter looks off-centre.', 'Rotated half a turn, a d looks like a p, and a b looks like a q.'],
+  setup() {
+    const lt = shuffle(['d', 'p', 'b', 'q', 'n', 'u'])[0];
+    const sx = Math.random() < .5 ? -1 : 1, sy = Math.random() < .5 ? -1 : 1;
+    Object.assign(S, { zMax: 350, xHalf: 10, tray: { x: 0, z: 55 }, eye: { x: 0, z: 315 }, spec: 'letter', letter: lt, stage: { x: sx * .85, y: sy * .55 }, quizOn: false, quizMiss: 0 });
+    S.tube = [{ def: LENS.o4, z: 100, fixed: true }, { def: LENS.e10, z: 305, fixed: true }];
+    S.opts = 'dpbq'.includes(lt) ? ['b', 'd', 'p', 'q'] : ['h', 'n', 'u', 'y'];
+  },
+  compute() { computeEye(); S.cent = Math.hypot(S.stage.x, S.stage.y); },
+  bench(g) { benchScope(g); },
+  rows() { return easy() ? [['Letter off centre', fmt(S.cent, 2) + ' mm'], ['Image', 'upside down']] : []; },
+  formula() { return '<span class="lbl">Why it flips</span>The objective makes a real image. With 1/f = 1/u + 1/v, magnification = −v/u, and the minus sign means upside down. The eyepiece keeps it that way.'; },
+  mainLabel: () => S.quizOn ? 'Pick a letter' : 'Check',
+  main() {
+    if (S.quizOn) return toast('Tap the letter you think is really on the slide.', 'hint');
+    S.checks++;
+    if (S.cent <= .07) { S.quizOn = true; sfx.snap(); renderQuiz(); refreshGoal(); }
+    else { countMove(true); sfx.bad(); toast(S.cent > 1 ? 'The letter is still out of view. Keep moving the slide.' : 'Close, but not centred yet. Get the letter right on the cross.', 'bad'); }
+  },
+  quiz: () => `<p>Through the microscope it looks like this. What letter is printed on the slide?</p>` + S.opts.map(v => `<button data-ans="${v}">${v}</button>`).join(''),
+  answer(v) {
+    if (v === S.letter) finish(S.cent < .035 && !S.quizMiss);
+    else { S.quizMiss++; countMove(true); sfx.bad(); toast('That is how it looks through the eyepiece. The image is turned half a circle, so the real letter is the other way round.', 'bad'); }
+  },
+  card: { title: 'Upside down', line: 'A two-lens microscope turns the image upside down and back to front. Move the slide right and the image moves left.', fx: 'magnification = −v/u (minus means inverted)',
+    svg: '<svg viewBox="0 0 160 60"><text x="18" y="44" style="font:700 40px Arial,sans-serif" class="nb-fill">d</text><path d="M58 30H96M88 24l8 6-8 6" class="nb-ink"/><circle cx="128" cy="30" r="24" fill="#fff4d8" stroke="#5a4c33"/><text x="116" y="44" style="font:700 40px Arial,sans-serif" class="nb-fill" transform="rotate(180 128 30)">d</text><text x="10" y="58" class="nb-t">on slide</text><text x="108" y="60" class="nb-t">you see</text></svg>' }
+},
+free: {
+  title: 'Free lab', learn: 'Sandbox', par: 0, step: .5, pan: true, free: true,
+  goal: () => 'Free lab: add any lenses, slide them up and down, and see what happens. Tap a lens to select it, then use the arrows for fine steps.',
+  hints: ['One lens close to your eye is a magnifier. Put the sample just inside its focal length.', 'For a microscope, put an objective low down and an eyepiece near the top. Try the 4× objective about 45 mm above the sample.', 'Try three lenses. The image from each lens becomes the object for the next one.'],
+  setup() {
+    Object.assign(S, { zMax: 350, xHalf: 13, tray: { x: 0, z: 40 }, eye: { x: 0, z: 336 }, sel: null, led: 1, spec: 'ant' });
+    S.trayLenses = [LENS.m100, LENS.m50, LENS.m25, LENS.o4, LENS.o10, LENS.o40, LENS.e5, LENS.e10, LENS.e20];
+  },
+  place(def) {
+    const had = S.tube.find(t => t.def === def);
+    if (had) { S.tube = S.tube.filter(t => t !== had); if (S.sel === had) S.sel = null; sfx.pick(); return; }
+    if (S.tube.length >= 4) return toast('The tube holds up to 4 lenses. Tap a lens in the tray to take it out.', 'hint');
+    const top = S.tube.length ? Math.max(...S.tube.map(t => t.z)) : S.tray.z;
+    const t = { def, z: clamp(S.tube.length ? top + 60 : S.tray.z + def.f, S.tray.z + 2, S.zMax - 16) };
+    S.tube.push(t); S.sel = t; sfx.snap();
+  },
+  nudge() {
+    const t = S.sel;
+    if (t === 'tray') return { get: () => S.tray.z, set: v => S.tray.z = v, min: 5, max: 150 };
+    return t ? { get: () => t.z, set: v => t.z = v, min: S.tray.z + 2, max: S.zMax - 16 } : null;
+  },
+  compute() { S.eye.z = S.tube.length ? Math.max(...S.tube.map(t => t.z)) + 10 : 336; computeEye(); },
+  bench(g) {
+    drawLED(g, 0); illum(g); drawTray(g, 0, S.tray.z, {});
+    handles.push(Object.assign(hRect(-20, S.tray.z - 6 / MP.zs, 20, S.tray.z + 10 / MP.zs, 'z', () => S.tray.z, v => S.tray.z = v, 5, 150), { down: () => S.sel = 'tray' }));
+    if (S.sel === 'tray') label(g, 'selected', MP.X(-12), MP.Y(S.tray.z) + 16, '#9ad9ff');
+    lensRays(g, 4);
+    lensHandles(g, '');
+    drawEye(g, 0, S.eye.z, true);
+  },
+  ruler: true,
+  meter: () => ['Sharpness', S.view.sharp],
+  rows() { return [['Zoom', fmt(S.view.zoom, 1) + '×'], ['Image', S.view.inverted ? 'upside down' : 'upright'], ['Brightness', fmt(S.view.bright * 100) + '%']]; },
+  formula() { return chainFormula(); },
+  mainLabel: () => 'Clear the tube',
+  main() { S.tube = []; S.sel = null; sfx.pick(); dirty = true; }
+}
+};
+const NLV = 8;
+
+/* ---------------- shared helpers ---------------- */
+function computeEye() {
+  const ls = S.tube.map(t => ({ z: t.z, f: t.def.f, r: t.def.r }));
+  const v = eyeView(S.tray.z, ls, S.eye.z);
+  // Brightness: the exit pupil (beam width at the eye) is 2·NA·250/zoom. A beam narrower than the
+  // eye's pupil carries less light, so the image gets dimmer as zoom goes up.
+  const first = ls.filter(l => l.z > S.tray.z).sort((a, b) => a.z - b.z)[0];
+  v.na = first ? first.r / (first.z - S.tray.z) : 0;
+  let bright = 1;
+  if (S.led != null) bright = first ? S.led * Math.min(1, 6 * (2 * v.na * NEAR / Math.max(v.zoom, .1) / PUPIL) ** 2) : S.led;
+  S.view = Object.assign(v, { type: 'eye', bright, offX: 0 });
+}
+function benchScope(g) {
+  drawLED(g, 0); illum(g); drawTray(g, 0, S.tray.z, {});
+  lensRays(g, 5);
+  S.tube.forEach(t => drawLens(g, { z: t.z, r: t.def.r, f: t.def.f }, t.def.z || t.def.name));
+  drawEye(g, 0, S.eye.z, true);
+}
+function lensHandles(g, prefix) {
+  S.tube.forEach(t => {
+    drawLens(g, { z: t.z, r: t.def.r, f: t.def.f }, t.def.kind ? t.def.z : prefix + t.def.f, S.sel === t);
+    handles.push(Object.assign(hRect(-t.def.r, t.z - 7 / MP.zs, t.def.r, t.z + 7 / MP.zs, 'z', () => t.z, v => t.z = v, S.tray.z + 2, S.zMax - 16), { down: () => S.sel = t }));
+  });
+}
+function markLine(g, z, txt, col, dashAlt) {
+  g.setLineDash(dashAlt ? [6, 3] : [2, 4]); g.strokeStyle = col; g.globalAlpha = .8; g.lineWidth = 1.2;
+  g.beginPath(); g.moveTo(MP.X(-S.xHalf), MP.Y(z)); g.lineTo(MP.X(S.xHalf), MP.Y(z)); g.stroke();
+  g.setLineDash([]); g.globalAlpha = 1;
+  label(g, txt, MP.X(-S.xHalf), MP.Y(z) + (dashAlt ? 12 : -4), col);
+}
+function chainFormula() {
+  const ts = S.tube.slice().filter(t => t.z > S.tray.z).sort((a, b) => a.z - b.z);
+  let s = '<span class="lbl">Lens by lens</span>1/f = 1/u + 1/v. Each image is the object for the next lens.';
+  if (!easy() && !L.free) return s;
+  let zo = S.tray.z;
+  ts.forEach((t, i) => {
+    const u = t.z - zo, inv = 1 / t.def.f - 1 / u;
+    if (Math.abs(inv) < 1e-5) { s += `<br>Lens ${i + 1} (f ${fmt(t.def.f, 1)}): u = ${fmt(u, 1)}, v = ∞`; zo = -1e9; return; }
+    const v = 1 / inv;
+    s += `<br>Lens ${i + 1} (f ${fmt(t.def.f, 1)}): u = ${fmt(u, 1)}, v = <em>${Math.abs(v) > 5000 ? '≈ ∞' : fmt(v, 1)}</em>${v < 0 ? ' (virtual)' : ''}`;
+    zo = t.z + v;
+  });
+  if (ts.length) s += `<br>Total zoom = 250 ÷ B = <em>${fmt(S.view.zoom, 1)}×</em>`;
+  return s;
+}
+function countMove(force) {
+  const n = performance.now();
+  if (force || n - (S.lastMoveT || 0) > 900) S.moves++;
+  S.lastMoveT = n;
+}
+
+/* ---------------- bench drawing ---------------- */
+const bc = $('#bench'), bctx = bc.getContext('2d');
+const vc = $('#view'), vctx = vc.getContext('2d');
+let BW = 0, BH = 0, VW = 0, MP = null;
+function resize() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const r = bc.getBoundingClientRect(); BW = r.width; BH = r.height;
+  bc.width = Math.round(BW * dpr); bc.height = Math.round(BH * dpr); bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const v = vc.getBoundingClientRect(); VW = Math.round(v.width * dpr); vc.width = vc.height = VW;
+  dirty = true;
+}
+new ResizeObserver(resize).observe($('#benchWrap'));
+new ResizeObserver(resize).observe(vc);
+
+function mapper() {
+  const pt = 24, pb = 22, zMin = -8, ruler = L.ruler ? 30 : 6;
+  const zs = (BH - pt - pb) / (S.zMax - zMin), cx = ruler + (BW - ruler) / 2, xs = ((BW - ruler) / 2 - 10) / S.xHalf;
+  MP = { zs, xs, cx, Y: z => BH - pb - (z - zMin) * zs, X: x => cx + x * xs };
+}
+function hRect(x0, z0, x1, z1, axis, get, set, min, max, tap) {
+  return { a: MP.X(x0) - 8, b: MP.Y(z1) - 8, c: MP.X(x1) + 8, d: MP.Y(z0) + 8, axis, get, set, min, max, tap };
+}
+function label(g, t, x, y, col) { g.font = '500 10px Lexend, system-ui, sans-serif'; g.fillStyle = col; const w = g.measureText(t).width; g.fillText(t, clamp(x, 2, BW - w - 3), y); }
+function ray(g, pts, col, w) {
+  g.strokeStyle = col; g.lineWidth = w; g.beginPath();
+  pts.forEach(([x, z], i) => i ? g.lineTo(MP.X(x), MP.Y(z)) : g.moveTo(MP.X(x), MP.Y(z))); g.stroke();
+}
+function drawRuler(g) {
+  g.save(); g.fillStyle = 'rgba(232,240,244,.06)'; g.fillRect(4, MP.Y(S.zMax - 2), 26, MP.Y(0) - MP.Y(S.zMax - 2));
+  g.strokeStyle = '#5d7487'; g.fillStyle = '#91a7b6'; g.font = '9px "JetBrains Mono", monospace'; g.lineWidth = 1;
+  for (let z = 0; z <= S.zMax - 5; z += 5) {
+    const y = Math.round(MP.Y(z)) + .5, len = z % 50 === 0 ? 12 : z % 10 === 0 ? 8 : 4;
+    g.beginPath(); g.moveTo(30 - len, y); g.lineTo(30, y); g.stroke();
+    if (z % 20 === 0) g.fillText(String(z), 5, y - 2);
+  }
+  g.fillText('mm', 5, MP.Y(S.zMax - 2) + 10);
+  g.restore();
+}
+function drawLED(g, z) {
+  const x = MP.X(0), y = MP.Y(z);
+  const gr = g.createRadialGradient(x, y, 0, x, y, 26); gr.addColorStop(0, 'rgba(255,210,120,.75)'); gr.addColorStop(1, 'rgba(255,181,71,0)');
+  g.fillStyle = gr; g.fillRect(x - 26, y - 26, 52, 52);
+  g.fillStyle = '#ffd38a'; g.beginPath(); g.arc(x, y, 5, Math.PI, 0); g.fill(); g.fillStyle = '#5d7487'; g.fillRect(x - 7, y, 14, 4);
+  label(g, 'LED', x + 9, y + 3, '#ffb547');
+}
+function illum(g) { // soft LED glow up to the tray
+  const x = MP.X(0), y0 = MP.Y(0), y1 = MP.Y(S.tray.z);
+  const gr = g.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, 'rgba(255,181,71,.22)'); gr.addColorStop(1, 'rgba(255,181,71,.06)');
+  g.fillStyle = gr; g.beginPath(); g.moveTo(x - 3, y0); g.lineTo(x + 3, y0); g.lineTo(x + 14, y1); g.lineTo(x - 14, y1); g.fill();
+}
+function drawTray(g, x, z, o) {
+  const y = MP.Y(z), cx = MP.X(x);
+  if (o.plate) {
+    const w = o.window * MP.xs, half = 30 * MP.xs;
+    g.fillStyle = '#5d7487'; g.fillRect(cx - half, y, half - w, 5); g.fillRect(cx + w, y, half - w, 5);
+    g.fillStyle = 'rgba(232,240,244,.35)'; g.fillRect(cx - w, y - 1, 2 * w, 2);
+    g.fillStyle = '#3b2412'; g.beginPath(); g.ellipse(cx, y - 2, 3, 1.5, 0, 0, 7); g.fill();
+    label(g, 'sample tray', cx - half, y + 15, '#91a7b6');
+  } else {
+    const half = Math.min(BW / 2 - 8, 24 * MP.xs);
+    g.fillStyle = '#5d7487'; g.fillRect(MP.cx - half, y + 1, half - 10, 5); g.fillRect(MP.cx + 10, y + 1, half - 10, 5);
+    g.fillStyle = 'rgba(232,240,244,.4)'; g.fillRect(MP.cx - half * .7, y - 1, half * 1.4, 2);
+    g.fillStyle = '#3b2412'; g.beginPath(); g.ellipse(MP.cx, y - 2, 3.5, 1.6, 0, 0, 7); g.fill();
+  }
+}
+function drawLens(g, l, txt, sel) {
+  const x = MP.X(0), y = MP.Y(l.z), w = l.r * MP.xs, t = clamp(320 / l.f, 3, 11);
+  g.fillStyle = 'rgba(154,217,255,.22)'; g.strokeStyle = sel ? '#ffd257' : '#9ad9ff'; g.lineWidth = sel ? 2.5 : 1.5;
+  g.beginPath(); g.moveTo(x - w, y); g.quadraticCurveTo(x, y - 2 * t, x + w, y); g.quadraticCurveTo(x, y + 2 * t, x - w, y); g.closePath(); g.fill(); g.stroke();
+  g.fillStyle = '#5d7487'; g.fillRect(x - w - 5, y - 2, 5, 4); g.fillRect(x + w, y - 2, 5, 4);
+  if (txt) { g.font = '500 11px "JetBrains Mono", monospace'; g.fillStyle = '#e8f0f4'; const tw = g.measureText(txt).width; g.fillText(txt, clamp(x + w + 8, 2, BW - tw - 3), y - 5); }
+}
+function drawSlot(g, z, r, txt) {
+  if (S.tube.some(t => Math.abs(t.z - z) < 40)) return;
+  const x = MP.X(0), y = MP.Y(z), w = r * MP.xs;
+  g.setLineDash([4, 4]); g.strokeStyle = 'rgba(154,217,255,.45)'; g.lineWidth = 1.2;
+  g.beginPath(); g.ellipse(x, y, w, 6, 0, 0, 7); g.stroke(); g.setLineDash([]);
+  label(g, txt + ' (empty)', x - w, y - 10, '#9ad9ff');
+}
+function drawEye(g, xmm, z, lit) {
+  const x = MP.X(xmm), y = MP.Y(z) - 4;
+  g.fillStyle = '#e8f0f4'; g.beginPath(); g.moveTo(x - 12, y); g.quadraticCurveTo(x, y - 11, x + 12, y); g.quadraticCurveTo(x, y + 11, x - 12, y); g.fill();
+  g.fillStyle = lit ? '#2c6f96' : '#3c4f5c'; g.beginPath(); g.arc(x, y, 4.5, 0, 7); g.fill();
+  g.fillStyle = '#0c1620'; g.beginPath(); g.arc(x, y, 2, 0, 7); g.fill();
+  label(g, 'eye', x + 14, y + 3, '#91a7b6');
+}
+function lensRays(g, n) {
+  const ls = S.tube.map(t => ({ z: t.z, f: t.def.f, r: t.def.r }));
+  const hOff = clamp(.45 * FIELD * Math.abs(S.view.B), .08, 2.6);
+  const zEnd = S.eye.z + 10;
+  g.save(); g.globalCompositeOperation = 'lighter';
+  traceFan(S.tray.z, 0, ls, zEnd, n + 1).forEach(p => ray(g, p, 'rgba(255,181,71,.75)', 1.2));
+  traceFan(S.tray.z, hOff, ls, zEnd, n).forEach(p => ray(g, p, 'rgba(127,227,200,.6)', 1));
+  g.restore();
+}
+function drawBench() {
+  const g = bctx; g.clearRect(0, 0, BW, BH); mapper(); handles = [];
+  // tube walls
+  g.strokeStyle = 'rgba(93,116,135,.45)'; g.lineWidth = 1;
+  const wx = (S.xHalf + 1) * MP.xs;
+  if (L.tube !== false) { g.beginPath(); g.moveTo(MP.cx - wx, MP.Y(-4)); g.lineTo(MP.cx - wx, MP.Y(S.zMax - 4)); g.moveTo(MP.cx + wx, MP.Y(-4)); g.lineTo(MP.cx + wx, MP.Y(S.zMax - 4)); g.stroke(); }
+  g.save(); g.beginPath(); g.rect(0, 0, BW, BH); g.clip();
+  if (L.ruler) drawRuler(g);
+  L.bench(g);
+  g.restore();
+}
+
+/* ---------------- eyepiece view ---------------- */
+const off = document.createElement('canvas'), off2 = document.createElement('canvas');
+const specks = Array.from({ length: 70 }, (_, i) => { const a = Math.sin(i * 12.9898) * 43758.5453, b = Math.sin(i * 78.233) * 12345.678; return [((a - Math.floor(a)) - .5) * 14, ((b - Math.floor(b)) - .5) * 14, .02 + ((a * 7) % 1 + 1) % 1 * .07]; });
+const hairs = Array.from({ length: 90 }, (_, i) => { const a = Math.sin(i * 3.7) * 9999.1, b = Math.sin(i * 5.3) * 7777.7; return [(a - Math.floor(a)), (b - Math.floor(b))]; });
+function drawAnt(g, s) {
+  const c = 'rgba(52,30,14,.92)';
+  g.strokeStyle = c; g.fillStyle = c; g.lineCap = 'round'; g.lineJoin = 'round';
+  g.lineWidth = .12;
+  const legs = [[.25, -.55, 1.0, -1.1, 1.7, -1.9], [.3, -.35, 1.3, -.2, 2.0, .3], [.25, -.15, 1.1, .8, 1.8, 1.9]];
+  for (const sx of [-1, 1]) for (const [x0, y0, x1, y1, x2, y2] of legs) {
+    g.beginPath(); g.moveTo(sx * x0, y0); g.lineTo(sx * x1, y1); g.lineTo(sx * x2, y2); g.stroke();
+    if (s > 30) { g.beginPath(); g.arc(sx * x1, y1, .07, 0, 7); g.fill(); }
+  }
+  g.lineWidth = .07;
+  for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(sx * .2, -2.0); g.quadraticCurveTo(sx * .9, -2.3, sx * .9, -2.9); g.lineTo(sx * 1.15, -3.3); g.stroke(); }
+  const el = (x, y, rx, ry) => { g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.fill(); };
+  el(0, -1.6, .55, .5); el(0, -.4, .34, .62); el(0, .42, .2, .18); el(0, 1.55, .85, 1.05);
+  for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(sx * .2, -2.0); g.lineTo(sx * .38, -2.35); g.lineTo(sx * .1, -2.25); g.fill(); }
+  if (s > 20) {
+    g.strokeStyle = 'rgba(160,120,70,.5)'; g.lineWidth = .05;
+    for (const y of [1.0, 1.45, 1.9]) { g.beginPath(); g.ellipse(0, y, .78, .22, 0, .15, Math.PI - .15); g.stroke(); }
+    g.strokeStyle = 'rgba(40,22,10,.85)'; g.lineWidth = .015;
+    for (const [u, v] of hairs) { const ang = u * Math.PI * 2, rr = Math.sqrt(v); const x = Math.cos(ang) * .85 * rr, y = 1.55 + Math.sin(ang) * 1.05 * rr; g.beginPath(); g.moveTo(x, y); g.lineTo(x * 1.12 + .02, y + .12); g.stroke(); }
+  }
+  if (s > 18) {
+    for (const sx of [-1, 1]) {
+      g.fillStyle = 'rgba(20,10,4,.95)'; g.beginPath(); g.ellipse(sx * .4, -1.68, .13, .19, 0, 0, 7); g.fill();
+      if (s > 60) { g.fillStyle = 'rgba(200,170,120,.35)'; for (let i = -2; i <= 2; i++) for (let j = -3; j <= 3; j++) { g.beginPath(); g.arc(sx * .4 + i * .045, -1.68 + j * .045, .016, 0, 7); g.fill(); } }
+    }
+  }
+}
+const cells = (() => {
+  const out = []; let seed = 7;
+  const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+  for (let i = 0; i < 400 && out.length < 40; i++) {
+    const a = rnd() * Math.PI * 2, d = .075 + rnd() * .6, x = Math.cos(a) * d, y = Math.sin(a) * d;
+    if (out.some(c => Math.hypot(c.x - x, c.y - y) < .072)) continue;
+    out.push({ x, y, r: .028 + rnd() * .01, k: Array.from({ length: 9 }, () => .85 + rnd() * .25), nx: (rnd() - .5) * .012, ny: (rnd() - .5) * .012 });
+  }
+  out.push({ x: 0, y: 0, r: .03, k: [1, .95, 1.05, 1, .92, 1.04, 1, .97, 1.03], nx: .004, ny: -.003, target: true });
+  return out;
+})();
+function drawCells(g, s) {
+  for (const c of cells) {
+    g.beginPath();
+    c.k.forEach((k, i) => { const a = i / 9 * Math.PI * 2, x = c.x + Math.cos(a) * c.r * k, y = c.y + Math.sin(a) * c.r * k; i ? g.lineTo(x, y) : g.moveTo(x, y); });
+    g.closePath();
+    g.fillStyle = c.target ? 'rgba(150,50,175,.6)' : 'rgba(170,140,195,.28)'; g.fill();
+    g.lineWidth = Math.max(.0015, 1.2 / s); g.strokeStyle = c.target ? '#5e1a74' : 'rgba(110,80,140,.55)'; g.stroke();
+    g.fillStyle = c.target ? '#3d0a50' : 'rgba(100,60,130,.5)';
+    g.beginPath(); g.arc(c.x + c.nx, c.y + c.ny, c.r * .28, 0, 7); g.fill();
+  }
+}
+function drawLetter(g) {
+  g.save(); g.scale(.01, .01);
+  g.fillStyle = '#1d1a26'; g.font = '700 70px Arial, Helvetica, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(S.letter || 'd', 0, 0);
+  g.restore();
+}
+function drawSlide(g, s, w, ox, oy, flip) {
+  const sp = S.spec || 'ant';
+  const gr = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w * .72);
+  const bgc = { ant: ['#fff4d8', '#e6c88f'], cells: ['#f8eef6', '#dcc9e0'], letter: ['#fffaf0', '#e8dcc2'] }[sp];
+  gr.addColorStop(0, bgc[0]); gr.addColorStop(1, bgc[1]);
+  g.fillStyle = gr; g.fillRect(0, 0, w, w);
+  g.save(); g.translate(w / 2 + ox, w / 2 + oy); if (flip) g.rotate(Math.PI); g.scale(s, s);
+  if (S.stage) g.translate(S.stage.x, S.stage.y);
+  if (sp !== 'ant') { g.fillStyle = 'rgba(140,110,60,.3)'; for (const [x, y, r] of specks) { g.beginPath(); g.arc(x * .2, y * .2, r * .3, 0, 7); g.fill(); } }
+  if (sp === 'cells') { drawCells(g, s); g.restore(); return; }
+  if (sp === 'letter') { drawLetter(g); g.restore(); return; }
+  if (s > 3) {
+    g.strokeStyle = 'rgba(120,90,40,.22)'; g.lineWidth = 1 / s;
+    for (let i = -12; i <= 12; i++) { g.beginPath(); g.moveTo(i, -12); g.lineTo(i, 12); g.moveTo(-12, i); g.lineTo(12, i); g.stroke(); }
+  }
+  g.fillStyle = 'rgba(140,110,60,.35)';
+  for (const [x, y, r] of specks) { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+  drawAnt(g, s);
+  g.restore();
+}
+function drawView() {
+  const g = vctx, W = VW; if (!W) return;
+  const R = W / 2 - 3 * (W / 200);
+  g.clearRect(0, 0, W, W);
+  g.save(); g.beginPath(); g.arc(W / 2, W / 2, R, 0, 7); g.clip();
+  const v = S.view;
+  if (v.type === 'paper') {
+    const sp = R / 14;
+    g.fillStyle = '#d8d0bf'; g.fillRect(0, 0, W, W);
+    g.fillStyle = 'rgba(60,50,30,.35)'; g.beginPath(); g.arc(W / 2, W / 2, 12 * sp, 0, 7); g.fill();   // lens shadow
+    const rp = Math.max(1, v.r * sp), I = clamp(Math.pow(.36 / v.r, .6), 0, 1);
+    const gr = g.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, rp * 1.3);
+    gr.addColorStop(0, `rgba(255,255,235,${.35 + .65 * I})`); gr.addColorStop(.75, `rgba(255,230,160,${.25 + .6 * I})`); gr.addColorStop(1, 'rgba(255,220,140,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(W / 2, W / 2, rp * 1.3, 0, 7); g.fill();
+  } else {
+    const K = R / FIELD, s = K / Math.abs(v.B), blurPx = v.blur * K;
+    const k = clamp(1.4 / (1 + blurPx * .55), .035, 1), w = Math.max(6, Math.round(W * k));
+    off.width = off.height = w;
+    drawSlide(off.getContext('2d'), s * k, w, v.offX * K * k, 0, v.inverted);
+    g.imageSmoothingEnabled = true;
+    if (k < .5) {
+      const w2 = Math.min(W, w * 4); off2.width = off2.height = w2;
+      const o2 = off2.getContext('2d'); o2.imageSmoothingEnabled = true; o2.drawImage(off, 0, 0, w2, w2);
+      g.drawImage(off2, 0, 0, W, W);
+    } else g.drawImage(off, 0, 0, W, W);
+    if (v.bright < 1) { g.fillStyle = `rgba(2,5,8,${1 - v.bright})`; g.fillRect(0, 0, W, W); }
+    if (L.crosshair) {
+      g.strokeStyle = 'rgba(200,30,40,.75)'; g.lineWidth = Math.max(1, W / 220);
+      g.beginPath(); g.moveTo(W / 2, W * .12); g.lineTo(W / 2, W * .88); g.moveTo(W * .12, W / 2); g.lineTo(W * .88, W / 2); g.stroke();
+    }
+  }
+  const vg = g.createRadialGradient(W / 2, W / 2, R * .7, W / 2, W / 2, R);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.45)');
+  g.fillStyle = vg; g.fillRect(0, 0, W, W);
+  g.restore();
+  g.lineWidth = 5 * (W / 200); g.strokeStyle = '#28404f'; g.beginPath(); g.arc(W / 2, W / 2, R, 0, 7); g.stroke();
+}
+
+/* ---------------- side panel ---------------- */
+function updateSide() {
+  const m = L.meter ? L.meter() : null;
+  $('#meter').hidden = !m;
+  if (m) { $('#meterLbl').textContent = m[0]; $('#meterVal').textContent = fmt(m[1]) + '%'; $('#meterBar').style.width = clamp(m[1], 0, 100) + '%'; }
+  $('#readouts').innerHTML = L.rows().map(([k, v]) => `<div><span>${k}</span><span>${v}</span></div>`).join('');
+  $('#formula').hidden = !save.formula;
+  if (save.formula) $('#formula').innerHTML = L.formula();
+  $('#viewCap').textContent = S.view.type === 'paper' ? 'Paper, seen from above' : (S.lvl === 1 ? 'What your eye sees' : 'Eyepiece view');
+  if (S.trayLenses) document.querySelectorAll('#chips .chip').forEach(c => c.classList.toggle('on', S.tube.some(t => t.def.id === c.dataset.id)));
+  $('#btnMain').textContent = L.mainLabel ? L.mainLabel() : 'Check';
+  $('#ledWrap').hidden = S.led == null;
+  if (S.led != null) { $('#ledVal').textContent = fmt(S.led * 100) + '%'; if (+$('#led').value !== Math.round(S.led * 100)) $('#led').value = Math.round(S.led * 100); }
+  $('#specWrap').hidden = !L.free;
+  if (L.free) document.querySelectorAll('#specSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.spec === S.spec));
+  const n = getNudge(); $('#nDown').disabled = $('#nUp').disabled = !n;
+  vc.classList.toggle('pan', !!L.pan);
+}
+function getNudge() { return typeof L.nudge === 'function' ? L.nudge() : L.nudge; }
+function renderChips() {
+  const has = !!S.trayLenses; $('#chipsWrap').hidden = !has; if (!has) return;
+  $('#chipsH').textContent = S.lvl === 5 ? 'Lens tray: drag or tap' : 'Lens tray: drag or tap a lens';
+  $('#chips').innerHTML = S.trayLenses.map(d => `<button class="chip" data-id="${d.id}">${lensSVG(d.f)}${d.kind ? `<span>${d.name}</span><b class="z">${d.z}</b>` : `<b>${d.name}</b>${easy() && d.z ? `<span class="z">${d.z}</span>` : ''}`}</button>`).join('');
+}
+function renderQuiz() {
+  const q = $('#quiz'), on = S.lvl === 2 ? S.marked != null : !!S.quizOn;
+  q.hidden = !on;
+  if (!on) return;
+  q.innerHTML = S.lvl === 2
+    ? `<p>${easy() ? `You marked ${fmt(S.marked)} mm.` : 'Read your green mark on the ruler.'} What is the focal length?</p>` + S.opts.map(v => `<button data-ans="${v}">${v} mm</button>`).join('')
+    : L.quiz();
+}
+function refreshGoal() { $('#goal').innerHTML = L.goal(); }
+
+/* ---------------- flow ---------------- */
+function show(id) {
+  ['home', 'levels', 'notebook'].forEach(s => $('#' + s).hidden = s !== id);
+  if (id === 'levels') renderLevels(); if (id === 'notebook') renderNotebook();
+}
+let nbBack = 'home';
+function startLevel(n) {
+  L = LV[n];
+  for (const k of Object.keys(S)) delete S[k];
+  Object.assign(S, { lvl: n, moves: 0, hintUsed: false, hintIdx: 0, checks: 0, tube: [], trayLenses: null, trayTarget: null, lastMoveT: 0, marked: null, led: null, spec: 'ant', stage: { x: 0, y: 0 }, view: { type: 'eye', B: 250, blur: 0, bright: 1, offX: 0 } });
+  L.setup();
+  setLvlNum();
+  $('#lvlTitle').textContent = L.title;
+  refreshGoal(); renderChips(); renderQuiz();
+  $('#nudge').hidden = !L.nudge;
+  $('#pad').hidden = !L.pad;
+  const st = (L.step || 1) + ' mm'; $('#nUp').lastChild.textContent = st; $('#nDown').lastChild.textContent = st;
+  hideToast(); $('#result').hidden = true;
+  show(null); dirty = true;
+}
+function setLvlNum() { $('#lvlNum').textContent = L.free ? `Sandbox · ${easy() ? 'Easy' : 'Hard'}` : `Level ${S.lvl} of ${NLV} · ${easy() ? 'Easy' : 'Hard'}`; }
+function firstOpenLevel() { for (let i = 1; i <= NLV; i++) if (!save.stars[i]) return i; return 1; }
+const unlocked = n => n === 1 || !!save.stars[n - 1];
+
+let toastT = 0;
+function toast(msg, kind, key) {
+  const t = $('#toast'); t.className = 'toast ' + (kind || '');
+  t.innerHTML = (key ? `<span class="k">${key}</span>` : '') + msg; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(hideToast, kind === 'hint' ? 9000 : 5000);
+}
+function hideToast() { $('#toast').hidden = true; }
+
+function doCheck() {
+  if (L.main) return L.main();
+  if (S.trayTarget != null) { S.tray.z = S.trayTarget; S.trayTarget = null; L.compute(); }
+  const r = L.check(); S.checks++;
+  if (r.ok) finish(r.acc); else { countMove(true); sfx.bad(); toast(r.msg, 'bad'); }
+}
+function finish(acc) {
+  const fair = S.moves <= L.par && !S.hintUsed;
+  const stars = 1 + (acc ? 1 : 0) + (fair ? 1 : 0);
+  save.stars[S.lvl] = Math.max(save.stars[S.lvl] || 0, stars); persist();
+  hideToast(); sfx.good();
+  for (let i = 0; i < stars; i++) setTimeout(() => sfx.star(i), 450 + i * 260);
+  const c = L.card, next = S.lvl < NLV;
+  $('#resultSheet').innerHTML = `
+    <h2>${['', 'Good start', 'Nice work', 'Perfect'][stars]}</h2>
+    <div class="bigstars">${[0, 1, 2].map(i => starSVG(i < stars, i)).join('')}</div>
+    <ul class="checks">
+      <li><span class="y">✓</span>Level complete</li>
+      <li><span class="${acc ? 'y' : 'n'}">${acc ? '✓' : '○'}</span>${acc ? 'Accurate result' : 'Accuracy: could be closer'}</li>
+      <li><span class="${fair ? 'y' : 'n'}">${fair ? '✓' : '○'}</span>${S.moves} moves (target ${L.par} or fewer)${S.hintUsed ? ', hint used' : ''}</li>
+    </ul>
+    ${cardHTML(S.lvl, true)}
+    <div class="row2"><button class="ghost" id="rReplay">Replay</button>${next ? '<button class="big" id="rNext">Next level</button>' : '<button class="big" id="rNb">Notebook</button>'}</div>`;
+  $('#result').hidden = false;
+  $('#rReplay').onclick = () => startLevel(S.lvl);
+  if (next) $('#rNext').onclick = () => startLevel(S.lvl + 1); else $('#rNb').onclick = () => { $('#result').hidden = true; nbBack = 'home'; show('notebook'); };
+}
+function starSVG(on, i) {
+  return `<svg viewBox="0 0 24 24" style="animation-delay:${.35 + i * .26}s"><path class="${on ? 'st-on' : 'st-off'}" d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z"/></svg>`;
+}
+function cardHTML(n, open) {
+  const c = LV[n].card;
+  if (!open) return `<div class="card locked"><span>Card ${n}: finish level ${n} to unlock</span></div>`;
+  return `<div class="card"><span class="k">Lab notebook · ${n}</span><h3>${c.title}</h3>${c.svg}<p>${c.line}</p>${c.fx && save.formula ? `<p class="fx">${c.fx}</p>` : ''}</div>`;
+}
+function renderNotebook() { $('#nbCards').innerHTML = Array.from({ length: NLV }, (_, i) => cardHTML(i + 1, !!save.stars[i + 1])).join(''); }
+function renderLevels() {
+  $('#lvlList').innerHTML = Array.from({ length: NLV }, (_, i) => {
+    const n = i + 1, lv = LV[n], st = save.stars[n] || 0, open = unlocked(n);
+    return `<button class="lvl" data-lvl="${n}" ${open ? '' : 'disabled'}><span class="n">${n}</span><span><b>${lv.title}</b><span>${open ? lv.learn : 'Finish level ' + (n - 1) + ' to unlock'}</span></span><span class="stars">${[0, 1, 2].map(j => `<svg viewBox="0 0 24 24"><path class="${j < st ? 'st-on' : 'st-off'}" d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z"/></svg>`).join('')}</span></button>`;
+  }).join('') + '<button class="lvl free" data-lvl="free"><span class="n">+</span><span><b>Free lab</b><span>A sandbox with every lens. No stars, no rules.</span></span><span></span></button>';
+}
+function renderSettings(el) {
+  el.innerHTML = `
+    <div class="set"><div class="t"><b>Mode</b><span>Easy shows zoom and distances live. Hard hides them, so you work them out.</span></div><div class="seg" data-k="mode"><button data-v="easy" aria-pressed="${save.mode === 'easy'}">Easy</button><button data-v="hard" aria-pressed="${save.mode === 'hard'}">Hard</button></div></div>
+    <div class="set"><div class="t"><b>Formulas</b><span>Show the lens formula (1/f = 1/u + 1/v) for grades 9 and 10.</span></div><div class="seg" data-k="formula"><button data-v="1" aria-pressed="${save.formula}">On</button><button data-v="0" aria-pressed="${!save.formula}">Off</button></div></div>
+    <div class="set"><div class="t"><b>Sound</b><span>Clicks, focus ticks and stars.</span></div><div class="seg" data-k="sound"><button data-v="1" aria-pressed="${save.sound}">On</button><button data-v="0" aria-pressed="${!save.sound}">Off</button></div></div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.seg[data-k] button'); if (!b) return;
+  const k = b.parentElement.dataset.k, v = b.dataset.v;
+  save[k] = k === 'mode' ? v : v === '1'; persist();
+  renderSettings($('#settingsHome')); renderSettings($('#settingsGame'));
+  if (k === 'sound' && save.sound) sfx.pick();
+  if (L) { setLvlNum(); renderChips(); renderQuiz(); dirty = true; }
+});
+
+/* ---------------- input: bench drag ---------------- */
+let drag = null;
+bc.addEventListener('pointerdown', e => {
+  const r = bc.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const h = handles.slice().reverse().find(h => x >= h.a && x <= h.c && y >= h.b && y <= h.d);
+  if (!h) return;
+  audio();
+  if (h.down) { h.down(); dirty = true; }
+  drag = { h, sx: x, sy: y, v0: h.get ? h.get() : 0, moved: false };
+  bc.setPointerCapture(e.pointerId); e.preventDefault();
+});
+bc.addEventListener('pointermove', e => {
+  if (!drag || drag.h.axis === 'tap') return;
+  const r = bc.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const d = drag.h.axis === 'x' ? (x - drag.sx) / MP.xs : -(y - drag.sy) / MP.zs;
+  if (!drag.moved && Math.abs(x - drag.sx) + Math.abs(y - drag.sy) < 3) return;
+  if (!drag.moved) { drag.moved = true; countMove(true); }
+  const nv = clamp(drag.v0 + d, drag.h.min, drag.h.max);
+  if (Math.abs(nv - drag.h.get()) > .3) focusTick();
+  drag.h.set(nv); dirty = true;
+});
+const endDrag = () => { if (drag && !drag.moved && drag.h.tap) drag.h.tap(); drag = null; };
+bc.addEventListener('pointerup', endDrag); bc.addEventListener('pointercancel', () => drag = null);
+bc.addEventListener('keydown', e => {
+  if (!getNudge() || !['ArrowUp', 'ArrowDown'].includes(e.key)) return;
+  e.preventDefault(); nudge(e.key === 'ArrowUp' ? 1 : -1);
+});
+
+/* nudge buttons with press-and-hold */
+function nudge(dir) {
+  const n = getNudge(); if (!n) return;
+  n.set(clamp(n.get() + dir * (L.step || 1), n.min, n.max)); countMove(false); focusTick(); dirty = true;
+}
+
+/* stage knobs (level 8): they move the slide, not the image */
+for (const b of document.querySelectorAll('#pad button')) {
+  let t1 = 0, t2 = 0;
+  const step = () => {
+    S.stage.x = clamp(S.stage.x + b.dataset.dx * .04, -2, 2); S.stage.y = clamp(S.stage.y + b.dataset.dy * .04, -2, 2);
+    countMove(false); focusTick(); dirty = true;
+  };
+  const stop = () => { clearTimeout(t1); clearInterval(t2); };
+  b.addEventListener('pointerdown', e => { e.preventDefault(); audio(); step(); t1 = setTimeout(() => { t2 = setInterval(step, 70); }, 380); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+  b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); step(); } });
+}
+
+/* drag the eyepiece view to move the slide (levels 6 and free lab): the image follows your finger */
+let pan = null;
+vc.addEventListener('pointerdown', e => {
+  if (!L.pan || S.view.type !== 'eye') return;
+  pan = { x: e.clientX, y: e.clientY, moved: false }; vc.setPointerCapture(e.pointerId); e.preventDefault();
+});
+vc.addEventListener('pointermove', e => {
+  if (!pan) return;
+  const dpr = vc.width / vc.getBoundingClientRect().width, R = VW / 2 - 3 * (VW / 200);
+  const s = (R / FIELD) / Math.abs(S.view.B), sg = S.view.inverted ? -1 : 1;
+  const dx = (e.clientX - pan.x) * dpr / s * sg, dy = (e.clientY - pan.y) * dpr / s * sg;
+  pan.x = e.clientX; pan.y = e.clientY;
+  if (!pan.moved) { pan.moved = true; countMove(true); }
+  S.stage.x = clamp(S.stage.x + dx, -3, 3); S.stage.y = clamp(S.stage.y + dy, -3, 3); dirty = true;
+});
+['pointerup', 'pointercancel'].forEach(ev => vc.addEventListener(ev, () => pan = null));
+
+$('#led').addEventListener('input', e => { S.led = e.target.value / 100; countMove(false); dirty = true; });
+$('#specSeg').addEventListener('click', e => {
+  const b = e.target.closest('[data-spec]'); if (!b) return;
+  S.spec = b.dataset.spec; S.letter = 'd'; S.stage = { x: 0, y: 0 }; sfx.pick(); dirty = true;
+});
+for (const [id, dir] of [['#nUp', 1], ['#nDown', -1]]) {
+  const b = $(id); let t1 = 0, t2 = 0;
+  const stop = () => { clearTimeout(t1); clearInterval(t2); };
+  b.addEventListener('pointerdown', e => { e.preventDefault(); audio(); nudge(dir); t1 = setTimeout(() => { t2 = setInterval(() => nudge(dir), 70); }, 380); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+  b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nudge(dir); } });
+}
+
+/* lens chips: tap, or drag onto the bench */
+let chipDrag = null, ghost = null;
+$('#chips').addEventListener('pointerdown', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  audio(); chipDrag = { id: c.dataset.id, sx: e.clientX, sy: e.clientY, moved: false, el: c };
+});
+window.addEventListener('pointermove', e => {
+  if (!chipDrag) return;
+  if (!chipDrag.moved && Math.hypot(e.clientX - chipDrag.sx, e.clientY - chipDrag.sy) > 8) {
+    chipDrag.moved = true; ghost = chipDrag.el.cloneNode(true);
+    Object.assign(ghost.style, { position: 'fixed', zIndex: 50, pointerEvents: 'none', width: chipDrag.el.offsetWidth + 'px', opacity: .9 });
+    document.body.appendChild(ghost);
+  }
+  if (ghost) { ghost.style.left = e.clientX - ghost.offsetWidth / 2 + 'px'; ghost.style.top = e.clientY - ghost.offsetHeight / 2 + 'px'; }
+});
+window.addEventListener('pointerup', e => {
+  if (!chipDrag) return;
+  const def = Object.values(LENS).find(l => l.id === chipDrag.id);
+  if (chipDrag.moved) {
+    const r = bc.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+      if (!S.tube.some(t => t.def === def)) { L.place(def); dirty = true; }
+    }
+  } else { L.place(def); dirty = true; }
+  if (ghost) ghost.remove(); ghost = null; chipDrag = null;
+});
+$('#chips').addEventListener('keydown', e => {
+  const c = e.target.closest('.chip'); if (!c || !(e.key === 'Enter' || e.key === ' ')) return;
+  e.preventDefault(); L.place(Object.values(LENS).find(l => l.id === c.dataset.id)); dirty = true;
+});
+$('#quiz').addEventListener('click', e => { const b = e.target.closest('[data-ans]'); if (b) L.answer(S.lvl === 2 ? +b.dataset.ans : b.dataset.ans); });
+
+/* buttons */
+$('#btnMain').addEventListener('click', () => { audio(); doCheck(); });
+$('#btnHint').addEventListener('click', () => {
+  audio(); S.hintUsed = true;
+  const h = L.hints[Math.min(S.hintIdx, L.hints.length - 1)]; S.hintIdx++;
+  toast(h, 'hint', `Hint ${Math.min(S.hintIdx, L.hints.length)} of ${L.hints.length}`);
+});
+$('#btnMenu').addEventListener('click', () => show('levels'));
+$('#btnSettings').addEventListener('click', () => { renderSettings($('#settingsGame')); $('#settingsModal').hidden = false; });
+$('#closeSettings').addEventListener('click', () => $('#settingsModal').hidden = true);
+$('#btnPlay').addEventListener('click', () => { audio(); startLevel(firstOpenLevel()); });
+$('#btnLevels').addEventListener('click', () => show('levels'));
+$('#btnNotebook').addEventListener('click', () => { nbBack = 'home'; show('notebook'); });
+$('#lvlList').addEventListener('click', e => { const b = e.target.closest('[data-lvl]'); if (b && !b.disabled) { audio(); startLevel(b.dataset.lvl === 'free' ? 'free' : +b.dataset.lvl); } });
+$('#btnFree').addEventListener('click', () => { audio(); startLevel('free'); });
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => show(b.dataset.go === 'back' ? nbBack : b.dataset.go)));
+$('#toast').addEventListener('click', hideToast);
+
+/* ---------------- loop ---------------- */
+function frame() {
+  if (L && S.trayTarget != null) {
+    const d = S.trayTarget - S.tray.z;
+    if (Math.abs(d) < .02) { S.tray.z = S.trayTarget; S.trayTarget = null; } else S.tray.z += d * .14;
+    dirty = true;
+  }
+  if (dirty && L && BW) { dirty = false; L.compute(); drawBench(); drawView(); updateSide(); }
+  requestAnimationFrame(frame);
+}
+renderSettings($('#settingsHome'));
+startLevel(firstOpenLevel());
+show('home');
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

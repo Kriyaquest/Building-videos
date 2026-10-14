@@ -91,9 +91,24 @@ const scannerData = {
   "microscope": {
     title: "Microscope",
     manualUrl: "",
-    buildVideo: "https://youtu.be/Qu3ilRo3MP8",
-    explainerVideo: "",
-    extraVideo: ""
+    buildVideo: "https://youtu.be/q08uPUpdjlA",
+    buildLabel: "Build",
+    buildHeader: "🛠️ Building a microscope",
+    buildDesc: "Follow along with the step-by-step video to build your microscope.",
+    explainerVideo: "https://youtu.be/Qu3ilRo3MP8",
+    explainerLabel: "KQ Microscope",
+    explainerHeader: "🔬 KQ Microscope",
+    explainerDesc: "Watch the KQ Microscope video.",
+    explainerIcon: "build",
+    extraVideo: "https://youtu.be/N7FFR5qoGsQ",
+    extraLabel: "How it works",
+    extraHeader: "💡 How a microscope works",
+    extraDesc: "Watch how a microscope works and the science behind it.",
+    extraIcon: "understand",
+    lab: "lens",
+    labLabel: "Lens Lab",
+    labHeader: "🔬 Lens Lab",
+    labDesc: "Build a microscope with real lens physics and see how the picture changes."
   },
   "familytree": {
     title: "Family trees",
@@ -142,7 +157,10 @@ const scannerData = {
     title: "Forces around us",
     manualUrl: "",
     buildVideo: "https://youtu.be/K2W4su8f6Jk",
-    explainerVideo: "",
+    explainerVideo: "https://youtu.be/puCTqe4y8uQ",
+    explainerLabel: "Vacuum cleaner",
+    explainerHeader: "💡 How a vacuum cleaner works",
+    explainerDesc: "Watch how a vacuum cleaner works and the forces behind it.",
     extraVideo: ""
   },
   "workandfriction": {
