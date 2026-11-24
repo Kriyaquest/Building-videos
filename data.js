@@ -249,8 +249,8 @@ const scannerData = {
     explainerVideo: "",
     extraVideo: ""
   },
-  "boatkeyholder": {
-    title: "Boat key holder",
+  "miniboat": {
+    title: "Mini boat",
     manualUrl: "",
     buildVideo: "https://youtu.be/5Tc3EHcgYYs",
     explainerVideo: "",
