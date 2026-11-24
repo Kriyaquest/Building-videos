@@ -248,6 +248,13 @@ const scannerData = {
     buildVideo: "https://youtu.be/nAIx-6vxRk0",
     explainerVideo: "",
     extraVideo: ""
+  },
+  "boatkeyholder": {
+    title: "Boat key holder",
+    manualUrl: "",
+    buildVideo: "https://youtu.be/5Tc3EHcgYYs",
+    explainerVideo: "",
+    extraVideo: ""
   }
 };
 
