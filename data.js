@@ -252,9 +252,13 @@ const scannerData = {
   "miniboat": {
     title: "Mini boat",
     manualUrl: "",
-    buildVideo: "https://youtu.be/5Tc3EHcgYYs",
+    buildVideo: "",
     explainerVideo: "",
-    extraVideo: ""
+    extraVideo: "",
+    lab: "miniboat",
+    labLabel: "Assembly video",
+    labHeader: "🎬 Assembly video",
+    labDesc: "Watch the mini boat go together, step by step. Press Play to hear the instructions."
   }
 };
 

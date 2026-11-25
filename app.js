@@ -468,6 +468,7 @@ function renderPage(item) {
 
   const labTitle = buttons.lab.querySelector('.tab-title');
   if (labTitle) labTitle.textContent = item.labLabel || "Lab exp";
+  document.querySelector('.lab-bar-title').textContent = item.labLabel || "Lab exp";
   const labHeader = boxes.lab.querySelector('.video-info h3');
   if (labHeader) labHeader.textContent = item.labHeader || "🧪 Lab exp";
   const labDesc = boxes.lab.querySelector('.video-info p');
